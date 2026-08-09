@@ -1,0 +1,19 @@
+{
+  "name": "EduTN43 Science Learning Suite",
+  "short_name": "EduTN43",
+  "description": "Interactive IB Science Socratic Practice and Visualizer by EduTN43. Works offline on Chromebooks and Desktop.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B192C",
+  "theme_color": "#1E3E62",
+  "orientation": "any",
+  "categories": ["education", "science"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

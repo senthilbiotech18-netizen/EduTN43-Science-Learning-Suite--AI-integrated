@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --ink: #0F172A;
+    --bg: #0B192C;
+    --bg-2: #1E3E62;
+    --paper: #FFFFFF;
+    --paper-2: #F0F6FF;
+    --blue: #3B82F6;
+    --blue-deep: #1D4ED8;
+    --blue-fill: rgba(59, 130, 246, 0.18);
+    --pink: #EC4899;
+    --pink-deep: #BE185D;
+    --pink-fill: rgba(236, 72, 153, 0.18);
+    --amber: #F59E0B;
+    --amber-deep: #B45309;
+    --amber-fill: rgba(245, 158, 11, 0.18);
+    --green: #10B981;
+    --green-deep: #047857;
+    --green-fill: rgba(16, 185, 129, 0.18);
+    --muted: #93C5FD;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--paper);
+    font-family: 'Literata', Georgia, serif;
+    min-height: 100vh;
+    margin: 0;
+  }
+}
+
+.font-mono-custom {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.font-serif-custom {
+  font-family: 'Literata', Georgia, serif;
+}
+

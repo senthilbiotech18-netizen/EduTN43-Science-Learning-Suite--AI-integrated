@@ -1,0 +1,6 @@
+{
+  "name": "EduTN43 Science Learning Suite",
+  "description": "Interactive science learning app by EduTN43 with Socratic assessment, cell visualizers, and offline Chromebook PWA app support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
