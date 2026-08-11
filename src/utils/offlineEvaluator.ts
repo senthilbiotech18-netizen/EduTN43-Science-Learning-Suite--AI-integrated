@@ -3,10 +3,16 @@ import { DepthLevel, AIFeedback } from '../types';
 export function evaluateAnswerOffline(
   _prompt: string,
   target: string,
-  studentAnswer: string
+  studentAnswer: string,
+  history: any[] = [],
+  level: string = 'MYP 2 & 3'
 ): AIFeedback {
   const answerLower = studentAnswer.toLowerCase().trim();
   const targetLower = target.toLowerCase();
+
+  const studentTurns = Array.isArray(history) ? history.filter((t) => t.sender === 'student').length + 1 : 1;
+  const followUpCount = studentTurns - 1;
+  const isLowerGrade = !level || level.includes('PYP') || level.includes('MYP 1') || level.includes('MYP 2') || level.includes('MYP 3') || level.includes('Grade 6') || level.includes('Grade 7') || level.includes('Grade 8');
 
   // Extract key vocabulary words (>3 characters, excluding stop words)
   const stopWords = new Set([
@@ -43,30 +49,44 @@ export function evaluateAnswerOffline(
   let gap: string | null = null;
   let exceeding = false;
 
-  if (matchRatio >= 0.7 || (matchRatio >= 0.5 && wordCount >= 18)) {
+  // Max 5 follow-up questions limit for lower grades
+  if (isLowerGrade && followUpCount >= 4) {
+    depth = 'extending';
+    exceeding = true;
+    praise = `🎉 Excellent perseverance! You have completed all 5 follow-up questions for this slide. Great job practicing Criterion A!`;
+    gap = null;
+    followUp = null;
+    return { praise, depth, misconception: false, gap, followUp, exceedingAchieved: true };
+  }
+
+  if (matchRatio >= 0.7 || (matchRatio >= 0.5 && wordCount >= 18) || followUpCount >= 3) {
     depth = 'extending';
     exceeding = true;
     praise = `Outstanding scientific reasoning! You've accurately integrated key concepts such as ${matchedKeywords.slice(0, 3).join(', ')}.`;
-    followUp = `To push your understanding even further: Can you explain how this process connects to broader biological systems?`;
+    followUp = isLowerGrade ? null : `To push your understanding even further: Can you explain how this process connects to broader biological systems?`;
   } else if (matchRatio >= 0.35 || wordCount >= 10) {
     depth = 'secure';
     praise = `Solid attempt! You correctly identified core elements of the target concept.`;
     if (missingKeywords.length > 0) {
-      gap = `Notice that key concepts like ${missingKeywords.slice(0, 2).join(' and ')} were not fully highlighted.`;
-      followUp = `How does incorporating ${missingKeywords.slice(0, 2).join(' and ')} strengthen your scientific explanation?`;
+      gap = isLowerGrade 
+        ? `💡 Gentle Reminder: The core concept is "${target}". Keep this key idea in mind!`
+        : `Notice that key concepts like ${missingKeywords.slice(0, 2).join(' and ')} were not fully highlighted.`;
+      followUp = `In simple words: How does ${missingKeywords.slice(0, 2).join(' or ')} play a key role here?`;
     } else {
-      followUp = `Can you elaborate on the underlying biological mechanism?`;
+      followUp = `Can you explain the main job of this cell structure in one simple sentence?`;
     }
   } else if (wordCount >= 4) {
     depth = 'developing';
     praise = `Good starting thought! You are on the right path.`;
-    gap = missingKeywords.length > 0 ? `Consider including key vocabulary like ${missingKeywords.slice(0, 2).join(' or ')}.` : null;
-    followUp = `What is the main function or cause involved in this scenario?`;
+    gap = isLowerGrade
+      ? `💡 Let's clarify together: "${target}".`
+      : (missingKeywords.length > 0 ? `Consider including key vocabulary like ${missingKeywords.slice(0, 2).join(' or ')}.` : null);
+    followUp = `What is the primary function or reason for this process?`;
   } else {
     depth = 'surface';
-    praise = `Thank you for your answer. Let's build upon this step-by-step.`;
-    gap = `Your answer is very brief and needs key biological details.`;
-    followUp = `Re-read the question prompt: What is the primary process or role being described?`;
+    praise = `Thank you for your answer! Let's build upon this gently step-by-step.`;
+    gap = `💡 Key Concept Rectification: Remember that "${target}".`;
+    followUp = `Re-read the key point above: Can you restate it in your own words?`;
   }
 
   return {

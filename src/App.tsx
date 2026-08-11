@@ -40,6 +40,10 @@ const DEPTH_RANK: Record<DepthLevel, number> = {
 
 export default function App() {
   const [selectedTopicId, setSelectedTopicId] = useState<string>(() => loadStoredTopicId('1-classification-living-organisms'));
+  const [selectedLevel, setSelectedLevel] = useState<string>(() => {
+    return localStorage.getItem('edutn43_level') || 'MYP 1–3 (Grade 6–8)';
+  });
+
   const activeTopic: Topic = TOPICS.find((t) => t.id === selectedTopicId) || TOPICS[0];
   const questions = activeTopic.questions;
 
@@ -57,6 +61,11 @@ export default function App() {
 
   const currentQuestion = questions[currentIndex] || questions[0];
   const currentAnswerState = answers[currentIndex] || INITIAL_SLIDE_STATE;
+
+  const handleSelectLevel = (newLevel: string) => {
+    setSelectedLevel(newLevel);
+    localStorage.setItem('edutn43_level', newLevel);
+  };
 
   // Persist settings, topic ID, and active answers on update
   useEffect(() => {
@@ -171,6 +180,8 @@ export default function App() {
           target: currentQuestion.target,
           answer: input,
           history: currentAnswerState.history,
+          level: activeTopic.level,
+          topicTitle: activeTopic.title,
         }),
       });
 
@@ -226,7 +237,9 @@ export default function App() {
       const feedback = evaluateAnswerOffline(
         currentQuestion.prompt,
         currentQuestion.target,
-        input
+        input,
+        currentAnswerState.history,
+        activeTopic.level
       );
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -334,6 +347,8 @@ export default function App() {
           totalSlides={questions.length}
           showingSummary={showingSummary}
           className={className}
+          selectedLevel={selectedLevel}
+          onSelectLevel={handleSelectLevel}
         />
 
         <SlideRack
@@ -376,6 +391,7 @@ export default function App() {
                 onResetSlide={handleResetSlide}
                 onNextSlide={handleNextSlide}
                 isLastSlide={currentIndex === questions.length - 1}
+                topicLevel={selectedLevel}
               />
             )
           )}
@@ -387,6 +403,8 @@ export default function App() {
         onClose={() => setIsTopicSelectorOpen(false)}
         selectedTopic={activeTopic}
         onSelectTopic={handleSelectTopic}
+        selectedLevel={selectedLevel}
+        onSelectLevel={handleSelectLevel}
       />
 
       <CellDiagramModal

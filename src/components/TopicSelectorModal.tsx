@@ -22,6 +22,8 @@ interface TopicSelectorModalProps {
   onClose: () => void;
   selectedTopic: Topic;
   onSelectTopic: (topic: Topic) => void;
+  selectedLevel?: string;
+  onSelectLevel?: (level: string) => void;
 }
 
 export const TopicSelectorModal: React.FC<TopicSelectorModalProps> = ({
@@ -29,8 +31,11 @@ export const TopicSelectorModal: React.FC<TopicSelectorModalProps> = ({
   onClose,
   selectedTopic,
   onSelectTopic,
+  selectedLevel = 'MYP 1–3 (Grade 6–8)',
+  onSelectLevel,
 }) => {
   const [activeSubject, setActiveSubject] = useState<SubjectType | 'All'>('All');
+  const [activeLevelFilter, setActiveLevelFilter] = useState<'All' | 'MYP 1-3' | 'MYP 4-5'>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
@@ -85,6 +90,47 @@ export const TopicSelectorModal: React.FC<TopicSelectorModalProps> = ({
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Grade Level Selection Banner */}
+        <div className="bg-[#0E1B1F] p-4 border-b border-white/10 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-[#E0AD63]" />
+            <div>
+              <span className="font-mono-custom text-xs font-bold text-[#E0AD63] uppercase tracking-wide block">
+                Target Grade Level Scaffolding:
+              </span>
+              <span className="text-[11px] font-serif-custom text-[#9FB0B6]">
+                Controls follow-up question limits and hint depth for student practice.
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 font-mono-custom text-xs w-full md:w-auto">
+            <button
+              onClick={() => onSelectLevel && onSelectLevel('MYP 1–3 (Grade 6–8)')}
+              className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg border font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                selectedLevel.includes('MYP 1') || selectedLevel.includes('Grade 6') || selectedLevel.includes('MYP 2') || selectedLevel.includes('MYP 3')
+                  ? 'bg-blue-600 text-white border-blue-400 shadow-md ring-2 ring-blue-400/30'
+                  : 'bg-white/5 text-[#9FB0B6] border-white/10 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span>🟢 MYP 1–3 (Grade 6–8)</span>
+              <span className="text-[10px] bg-blue-900/60 text-blue-200 px-1.5 py-0.5 rounded ml-1">Max 5 Follow-ups</span>
+            </button>
+
+            <button
+              onClick={() => onSelectLevel && onSelectLevel('MYP 4–5 (Grade 9–10)')}
+              className={`flex-1 md:flex-initial px-3.5 py-2 rounded-lg border font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                selectedLevel.includes('MYP 4') || selectedLevel.includes('Grade 9') || selectedLevel.includes('MYP 5')
+                  ? 'bg-indigo-600 text-white border-indigo-400 shadow-md ring-2 ring-indigo-400/30'
+                  : 'bg-white/5 text-[#9FB0B6] border-white/10 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span>🟦 MYP 4–5 (Grade 9–10)</span>
+              <span className="text-[10px] bg-indigo-900/60 text-indigo-200 px-1.5 py-0.5 rounded ml-1">Advanced Rigor</span>
+            </button>
+          </div>
         </div>
 
         {/* Search & Subject Filter Bar */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, RefreshCw, Volume2, VolumeX, Sparkles, Layers, GraduationCap, Download, Laptop } from 'lucide-react';
+import { BookOpen, RefreshCw, Volume2, VolumeX, Sparkles, Layers, GraduationCap, Download, Laptop, ChevronDown } from 'lucide-react';
 import { Topic } from '../types';
 
 interface HeaderProps {
@@ -13,6 +13,8 @@ interface HeaderProps {
   totalSlides: number;
   showingSummary: boolean;
   className?: string;
+  selectedLevel?: string;
+  onSelectLevel?: (level: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,10 +28,13 @@ export const Header: React.FC<HeaderProps> = ({
   totalSlides,
   showingSummary,
   className = 'Science Explorer',
+  selectedLevel = 'MYP 1–3 (Grade 6–8)',
+  onSelectLevel,
 }) => {
   const isCellTopic = topic.id.includes('cell');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [isLevelDropdownOpen, setIsLevelDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -56,6 +61,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const isLowerGrade = !selectedLevel || selectedLevel.includes('PYP') || selectedLevel.includes('MYP 1') || selectedLevel.includes('MYP 2') || selectedLevel.includes('MYP 3') || selectedLevel.includes('Grade 6') || selectedLevel.includes('Grade 7') || selectedLevel.includes('Grade 8');
+
   return (
     <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-blue-400/20 pb-4 mb-6 relative">
       <div>
@@ -79,10 +86,59 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {topic.subject}
           </span>
-          <span className="px-2.5 py-1 rounded text-[11px] font-mono-custom font-bold uppercase bg-white/10 text-blue-200 border border-blue-300/20 flex items-center gap-1">
-            <BookOpen className="w-3 h-3" />
-            {topic.level || 'PYP to MYP 5'}
-          </span>
+
+          {/* Interactive Grade Level Selector Dropdown */}
+          <div className="relative inline-block">
+            <button
+              onClick={() => setIsLevelDropdownOpen(!isLevelDropdownOpen)}
+              className="px-2.5 py-1 rounded text-[11px] font-mono-custom font-bold uppercase bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/40 flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
+              title="Click to select student grade level scaffolding"
+            >
+              <BookOpen className="w-3 h-3 text-amber-300" />
+              <span>Level: {selectedLevel}</span>
+              <ChevronDown className="w-3 h-3 text-amber-300 ml-0.5" />
+            </button>
+
+            {isLevelDropdownOpen && (
+              <div className="absolute left-0 mt-1 w-64 bg-[#112238] border border-blue-400/40 rounded-xl shadow-2xl p-2 z-50 text-xs font-mono-custom space-y-1">
+                <div className="text-[10px] uppercase font-bold text-blue-300 px-2.5 py-1 border-b border-blue-400/20">
+                  Select Grade Level Scaffolding
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (onSelectLevel) onSelectLevel('MYP 1–3 (Grade 6–8)');
+                    setIsLevelDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
+                    isLowerGrade ? 'bg-blue-600 text-white font-bold' : 'text-blue-100 hover:bg-blue-900/50'
+                  }`}
+                >
+                  <div>
+                    <div className="font-bold">MYP 1–3 (Grade 6–8)</div>
+                    <div className="text-[10px] text-blue-200 font-serif-custom opacity-90">Max 5 follow-ups &amp; guided rectification</div>
+                  </div>
+                  {isLowerGrade && <span className="text-amber-300 font-bold">✓</span>}
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (onSelectLevel) onSelectLevel('MYP 4–5 (Grade 9–10)');
+                    setIsLevelDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
+                    !isLowerGrade ? 'bg-blue-600 text-white font-bold' : 'text-blue-100 hover:bg-blue-900/50'
+                  }`}
+                >
+                  <div>
+                    <div className="font-bold">MYP 4–5 (Grade 9–10)</div>
+                    <div className="text-[10px] text-blue-200 font-serif-custom opacity-90">Full Socratic depth &amp; advanced rigor</div>
+                  </div>
+                  {!isLowerGrade && <span className="text-amber-300 font-bold">✓</span>}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <h1 className="font-mono-custom text-2xl md:text-3xl font-bold text-white mb-1 tracking-tight flex items-center gap-2">

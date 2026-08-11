@@ -12,6 +12,7 @@ interface SlideCardProps {
   onResetSlide: () => void;
   onNextSlide: () => void;
   isLastSlide: boolean;
+  topicLevel?: string;
 }
 
 export const SlideCard: React.FC<SlideCardProps> = ({
@@ -24,6 +25,7 @@ export const SlideCard: React.FC<SlideCardProps> = ({
   onResetSlide,
   onNextSlide,
   isLastSlide,
+  topicLevel = 'MYP 2 & 3',
 }) => {
   const [showHint, setShowHint] = useState(false);
   const [pasteWarning, setPasteWarning] = useState(false);
@@ -49,6 +51,11 @@ export const SlideCard: React.FC<SlideCardProps> = ({
   };
 
   const hasHistory = state.history.length > 0;
+  const studentTurns = state.history.filter((t) => t.sender === 'student').length;
+  const followUpCount = Math.max(0, studentTurns - 1);
+  const isLowerGrade = !topicLevel || topicLevel.includes('PYP') || topicLevel.includes('MYP 1') || topicLevel.includes('MYP 2') || topicLevel.includes('MYP 3') || topicLevel.includes('Grade 6') || topicLevel.includes('Grade 7') || topicLevel.includes('Grade 8');
+  const maxFollowUpsReached = isLowerGrade && followUpCount >= 5;
+
   const latestTurn = hasHistory ? state.history[state.history.length - 1] : null;
   const latestFeedback = latestTurn?.feedback;
   const isExceeding = state.exceedingAchieved;
@@ -79,13 +86,18 @@ export const SlideCard: React.FC<SlideCardProps> = ({
   return (
     <div className="bg-[#F4EFE2] text-[#0E1B1F] rounded-xl p-5 md:p-8 shadow-2xl border border-[#C9C2AE] transition-all">
       {/* Slide Header Info */}
-      <div className="font-mono-custom text-xs font-bold text-[#2C5F8A] tracking-wider mb-3 uppercase flex items-center justify-between">
-        <span className="flex items-center gap-2">
+      <div className="font-mono-custom text-xs font-bold text-[#2C5F8A] tracking-wider mb-3 uppercase flex flex-wrap items-center justify-between gap-2">
+        <span className="flex flex-wrap items-center gap-2">
           SLIDE {slideIndex + 1} OF {totalSlides} &nbsp;·&nbsp; STRAND {question.strand.toUpperCase()}
           {isExceeding && (
             <span className="bg-[#4A7A3E] text-white text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 shadow-sm">
               <Award className="w-3 h-3 text-[#E0AD63]" />
               Exceeding
+            </span>
+          )}
+          {isLowerGrade && hasHistory && !isExceeding && (
+            <span className="bg-[#2C5F8A]/15 text-[#2C5F8A] text-[10px] px-2 py-0.5 rounded-full font-mono-custom border border-[#2C5F8A]/30">
+              Follow-up {followUpCount}/5 max
             </span>
           )}
         </span>
@@ -171,7 +183,7 @@ export const SlideCard: React.FC<SlideCardProps> = ({
                   {fb.gap && (
                     <div className="text-xs font-serif-custom text-[#3A352B] mb-2 bg-white/70 p-2.5 rounded border border-[#C9C2AE]">
                       <strong className="font-mono-custom text-[11px] text-[#8A5A1E] uppercase tracking-wide block mb-0.5">
-                        Scaffolding Gap Pointer:
+                        {isLowerGrade ? '💡 Concept Key & Rectification:' : 'Scaffolding Gap Pointer:'}
                       </strong>
                       {fb.gap}
                     </div>
@@ -207,7 +219,7 @@ export const SlideCard: React.FC<SlideCardProps> = ({
               🎉 EXCEEDING LEVEL ATTAINED FOR THIS SLIDE!
             </h3>
             <p className="font-serif-custom text-sm text-[#3A352B] max-w-lg mx-auto">
-              Your response demonstrates complete biological accuracy, precise scientific terminology, and thorough cause-and-effect reasoning.
+              Your response demonstrates complete scientific accuracy, precise terminology, and thorough cause-and-effect reasoning.
             </p>
             <div className="pt-2 flex justify-center gap-3">
               <button
@@ -225,12 +237,41 @@ export const SlideCard: React.FC<SlideCardProps> = ({
               </button>
             </div>
           </div>
+        ) : maxFollowUpsReached ? (
+          <div className="bg-blue-50/90 border-2 border-blue-600 p-6 rounded-xl text-center space-y-3 shadow-md animate-in fade-in duration-300">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto shadow-lg">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+            <h3 className="font-mono-custom text-base md:text-lg font-bold text-[#0E1B1F]">
+              🎉 5 FOLLOW-UP QUESTIONS COMPLETED FOR THIS SLIDE!
+            </h3>
+            <p className="font-serif-custom text-sm text-[#3A352B] max-w-lg mx-auto">
+              Great perseverance! You've completed all 5 follow-up questions for this slide. Click below to grade your progress and advance to the next slide!
+            </p>
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                onClick={onResetSlide}
+                className="font-mono-custom text-xs font-semibold px-3 py-2 rounded border border-[#0E1B1F] text-[#0E1B1F] hover:bg-black/5 cursor-pointer flex items-center gap-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Restart Thread
+              </button>
+              <button
+                onClick={onNextSlide}
+                className="font-mono-custom text-sm font-bold px-6 py-2.5 rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-lg flex items-center gap-2 cursor-pointer"
+              >
+                {isLastSlide ? 'Finish Slide & View Certificate →' : 'Finish Slide & Move to Next →'}
+              </button>
+            </div>
+          </div>
         ) : (
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block font-mono-custom text-xs font-bold text-[#0E1B1F] uppercase tracking-wider">
                 {hasHistory
-                  ? '💬 Write your answer to the teacher\'s follow-up question below:'
+                  ? isLowerGrade
+                    ? `💬 Write your answer to follow-up #${followUpCount + 1} (Max 5 for lower grade):`
+                    : "💬 Write your answer to the teacher's follow-up question below:"
                   : 'Write your initial answer to the question:'}
               </label>
               <span className="font-mono-custom text-[11px] text-[#A8425A] bg-[#A8425A]/10 px-2.5 py-0.5 rounded border border-[#A8425A]/30 flex items-center gap-1 font-semibold">
