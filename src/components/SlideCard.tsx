@@ -288,39 +288,59 @@ export const SlideCard: React.FC<SlideCardProps> = ({
               </div>
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-1 border-t border-[#C9C2AE]/60 pt-3">
               {hasHistory ? (
                 <button
                   onClick={onResetSlide}
                   className="font-mono-custom text-xs font-semibold text-[#6B6455] hover:text-[#0E1B1F] flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  Restart thread on this slide
+                  Restart slide thread
                 </button>
               ) : (
                 <span className="text-xs font-serif-custom text-[#6B6455] italic">
-                  Keep answering follow-up questions until you reach the Exceeding level!
+                  Submit your initial answer to get instant feedback.
                 </span>
               )}
 
-              <button
-                onClick={onSubmitAnswer}
-                disabled={state.isChecking || !state.currentInput.trim()}
-                className="font-mono-custom text-sm font-semibold px-6 py-2.5 rounded-md bg-[#0E1B1F] text-[#F4EFE2] hover:bg-[#1E3A41] active:scale-97 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 cursor-pointer shadow"
-              >
-                {state.isChecking ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-[#4F8FC7] animate-pulse" />
-                    Evaluating thinking...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 text-[#E0AD63]" />
-                    {hasHistory ? 'Submit Answer to Follow-up' : 'Check My Thinking'}
-                  </>
+              <div className="flex flex-wrap items-center gap-2.5">
+                {hasHistory && (
+                  <button
+                    onClick={onNextSlide}
+                    className="font-mono-custom text-xs md:text-sm font-bold px-4 py-2.5 rounded-md bg-blue-700 hover:bg-blue-800 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-md border border-blue-500/30"
+                    title="Grade current answer and proceed to next slide"
+                  >
+                    <span>{isLastSlide ? 'Finish Slide & View Certificate →' : 'Finish Slide & Move to Next →'}</span>
+                  </button>
                 )}
-              </button>
+
+                <button
+                  onClick={onSubmitAnswer}
+                  disabled={state.isChecking || !state.currentInput.trim()}
+                  className="font-mono-custom text-sm font-semibold px-5 py-2.5 rounded-md bg-[#0E1B1F] text-[#F4EFE2] hover:bg-[#1E3A41] active:scale-97 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 cursor-pointer shadow"
+                >
+                  {state.isChecking ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-[#4F8FC7] animate-pulse" />
+                      Evaluating thinking...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 text-[#E0AD63]" />
+                      {hasHistory ? 'Submit Follow-up Answer' : 'Check My Thinking'}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+
+            {hasHistory && (
+              <div className="mt-3 text-xs font-serif-custom text-[#3A352B] bg-blue-50/80 p-2.5 rounded-lg border border-blue-200/70 flex items-center justify-between gap-2">
+                <span>
+                  💡 <strong>Student Control:</strong> You can answer the follow-up question to raise your depth level, or click <strong>"Finish Slide &amp; Move to Next"</strong> whenever you feel your answer is complete!
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
