@@ -398,6 +398,15 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
                 <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF Report'}</span>
               </button>
 
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm bg-blue-700 hover:bg-blue-600 text-white shadow-lg transition-all cursor-pointer"
+                title="Print report directly to school printer or save as PDF"
+              >
+                <Printer className="w-4 h-4 text-blue-200" />
+                <span>Print Academic Record</span>
+              </button>
+
               {onGoToPortfolio && (
                 <button
                   onClick={onGoToPortfolio}
@@ -431,10 +440,10 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
               CRITERION A PERFORMANCE &amp; EXCEEDING MASTERY SUMMARY
             </div>
             <h2 className="font-mono-custom text-2xl font-bold mt-1 text-[#0E1B1F]">
-              Session Completion Dashboard
+              SchoolAI Space Learning Dossier &amp; Verified Academic Record
             </h2>
             <p className="text-sm text-[#6B6455] font-serif-custom italic">
-              {className} Science · Cell structure &amp; organelles
+              {className} Science · IB MYP Criterion A Verified Submission
             </p>
           </div>
 
@@ -445,7 +454,15 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
               className="font-mono-custom text-xs font-bold px-4 py-2 rounded bg-[#4A7A3E] text-white hover:bg-[#3d6533] transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
             >
               <Download className="w-4 h-4 text-[#E0AD63]" />
-              {isGeneratingPDF ? 'Generating PDF...' : '📄 Download PDF Certificate'}
+              {isGeneratingPDF ? 'Generating PDF...' : '📄 Download PDF Report'}
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="font-mono-custom text-xs font-bold px-4 py-2 rounded bg-[#2C5F8A] text-white hover:bg-[#204566] transition-all flex items-center gap-2 cursor-pointer shadow-md"
+              title="Print academic record directly to school printer"
+            >
+              <Printer className="w-4 h-4 text-cyan-200" />
+              🖨️ Print Academic Record
             </button>
             <button
               onClick={() => setShowScreenshotMode(!showScreenshotMode)}
@@ -560,7 +577,7 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
                 Exceeding Level Mastery
               </div>
               <div className="font-mono-custom text-sm font-bold text-[#4A7A3E]">
-                {exceedingCount} / {total} Slides
+                {exceedingCount} / {total} Inquiries
               </div>
             </div>
           </div>
@@ -714,7 +731,7 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
                   className="p-3 bg-amber-50/60 rounded-lg border border-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                 >
                   <div className="flex items-center gap-2 font-mono-custom">
-                    <span className="font-bold text-[#2C5F8A] text-[11px]">Slide {corr.slide}:</span>
+                    <span className="font-bold text-[#2C5F8A] text-[11px]">Inquiry {corr.slide}:</span>
                     <span className="line-through text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 font-bold">
                       {corr.original}
                     </span>
@@ -734,7 +751,7 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
                       onClick={() => onReviewSlide(corr.slide - 1)}
                       className="font-mono-custom text-[11px] text-[#2C5F8A] hover:underline cursor-pointer ml-auto shrink-0"
                     >
-                      Review slide &rarr;
+                      Open in Space &rarr;
                     </button>
                   </div>
                 </div>
@@ -755,13 +772,13 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
                 <div key={idx} className="p-3 bg-[#EAE3D2]/50 rounded border border-[#C9C2AE] text-xs">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-mono-custom font-bold text-[#2C5F8A]">
-                      Slide {item.slide}
+                      Inquiry {item.slide}
                     </span>
                     <button
                       onClick={() => onReviewSlide(item.slide - 1)}
                       className="font-mono-custom text-[11px] text-[#A8425A] hover:underline cursor-pointer"
                     >
-                      Review slide &rarr;
+                      Open in Space &rarr;
                     </button>
                   </div>
                   <div className="font-serif-custom font-medium text-[#0E1B1F] mb-1">
@@ -934,7 +951,7 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
             <table className="w-full text-left border-collapse font-serif-custom text-xs">
               <thead>
                 <tr className="border-b-2 border-[#0E1B1F] bg-[#EAE3D2] font-mono-custom text-[11px] text-[#0E1B1F] uppercase">
-                  <th className="p-2.5">Slide #</th>
+                  <th className="p-2.5">Inquiry #</th>
                   <th className="p-2.5">Question Concept</th>
                   <th className="p-2.5 text-center">Dialogue Turns</th>
                   <th className="p-2.5 text-right">Attained Mastery Level</th>
@@ -950,7 +967,7 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
                   return (
                     <tr key={q.id} className="border-b border-[#C9C2AE] hover:bg-black/5">
                       <td className="p-2.5 font-mono-custom font-bold text-[#2C5F8A]">
-                        Slide {idx + 1}
+                        Inquiry {idx + 1}
                       </td>
                       <td className="p-2.5 text-[#0E1B1F] font-medium max-w-xs truncate">
                         {q.prompt}

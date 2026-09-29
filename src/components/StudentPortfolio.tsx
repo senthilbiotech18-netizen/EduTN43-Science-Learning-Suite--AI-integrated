@@ -474,7 +474,7 @@ export const StudentPortfolio: React.FC<StudentPortfolioProps> = ({
                 Scaffold Learning {activePdfSub.scaffoldNumber}: {activePdfSub.scaffoldTitle}
               </h2>
               <p className="text-xs text-slate-700 mt-1">
-                Topic: {activePdfSub.topicTitle} • Total Slides Completed: {activePdfSub.totalSlides}
+                Topic: {activePdfSub.topicTitle} • Total Space Inquiries Completed: {activePdfSub.totalSlides}
               </p>
             </div>
 

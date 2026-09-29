@@ -187,7 +187,7 @@ export const TopicSetupDashboard: React.FC<TopicSetupDashboardProps> = ({
               Topic Setup
             </h1>
             <p className="font-serif-custom text-sm md:text-base text-blue-100/90 mt-1 max-w-2xl">
-              Type any science topic you want to study today. We will scaffold questions specifically to your grade level and preferred number of slides.
+              Type any science topic you want to study today. We will scaffold questions specifically to your grade level and preferred number of inquiries.
             </p>
           </div>
 
@@ -414,10 +414,10 @@ export const TopicSetupDashboard: React.FC<TopicSetupDashboardProps> = ({
             <span className="w-6 h-6 rounded-full bg-purple-500/30 text-purple-300 flex items-center justify-center text-xs font-bold border border-purple-400/40">
               3
             </span>
-            <span>How many slides would you like to do?</span>
+            <span>How many Space inquiries would you like to explore?</span>
           </label>
           <p className="text-xs font-serif-custom text-blue-200/80 mb-3">
-            12 slides are too long for lower grades. Choose a bite-sized slide count so practice stays engaging!
+            Choose a bite-sized inquiry count so your SchoolAI Space remains focused, deep, and engaging!
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -433,7 +433,7 @@ export const TopicSetupDashboard: React.FC<TopicSetupDashboardProps> = ({
                   : 'bg-[#0E2034] border-blue-400/20 text-blue-200 hover:border-blue-400/40'
               }`}
             >
-              <div className="font-mono-custom font-bold text-lg text-purple-300">3 Slides</div>
+              <div className="font-mono-custom font-bold text-lg text-purple-300">3 Inquiries</div>
               <div className="text-[11px] font-serif-custom text-purple-200/80">Quick Practice (10 min)</div>
             </button>
 
@@ -449,7 +449,7 @@ export const TopicSetupDashboard: React.FC<TopicSetupDashboardProps> = ({
                   : 'bg-[#0E2034] border-blue-400/20 text-blue-200 hover:border-blue-400/40'
               }`}
             >
-              <div className="font-mono-custom font-bold text-lg text-amber-300">5 Slides</div>
+              <div className="font-mono-custom font-bold text-lg text-amber-300">5 Inquiries</div>
               <div className="text-[11px] font-serif-custom text-amber-200/80">⭐ Recommended</div>
             </button>
 
@@ -465,7 +465,7 @@ export const TopicSetupDashboard: React.FC<TopicSetupDashboardProps> = ({
                   : 'bg-[#0E2034] border-blue-400/20 text-blue-200 hover:border-blue-400/40'
               }`}
             >
-              <div className="font-mono-custom font-bold text-lg text-blue-300">8 Slides</div>
+              <div className="font-mono-custom font-bold text-lg text-blue-300">8 Inquiries</div>
               <div className="text-[11px] font-serif-custom text-blue-200/80">Deep Inquiry</div>
             </button>
 
@@ -533,11 +533,11 @@ export const TopicSetupDashboard: React.FC<TopicSetupDashboardProps> = ({
             {isGenerating ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin text-[#0E1B1F]" />
-                <span>Calibrating {slideCount} Scaffolded Slides for "{topicInput.trim()}"...</span>
+                <span>Calibrating SchoolAI Space ({slideCount} Inquiries) for "{topicInput.trim()}"...</span>
               </>
             ) : (
               <>
-                <span>Start Learning Session ({slideCount} Slides)</span>
+                <span>Launch SchoolAI Space ({slideCount} Inquiries)</span>
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

@@ -12,9 +12,7 @@ import {
   ScaffoldStage,
   PortalMode,
 } from './types';
-import { Header } from './components/Header';
-import { SlideRack } from './components/SlideRack';
-import { SlideCard } from './components/SlideCard';
+import { SchoolAISpace } from './components/SchoolAISpace';
 import { SessionSummary } from './components/SessionSummary';
 import { CellDiagramModal } from './components/CellDiagramModal';
 import { TopicSelectorModal } from './components/TopicSelectorModal';
@@ -784,38 +782,6 @@ export default function App() {
                 </div>
               )}
 
-              <Header
-                topic={activeTopic}
-                onOpenTopics={() => setIsTopicSelectorOpen(true)}
-                onOpenDiagrams={() => setIsDiagramOpen(true)}
-                onReset={handleResetSession}
-                onNewSession={() => {
-                  setIsSessionActive(false);
-                  setPortalMode('student');
-                }}
-                speechEnabled={speechEnabled}
-                onToggleSpeech={() => setSpeechEnabled(!speechEnabled)}
-                currentSlide={currentIndex + 1}
-                totalSlides={questions.length}
-                showingSummary={showingSummary}
-                className={className}
-                selectedLevel={selectedLevel}
-                onSelectLevel={handleSelectLevel}
-                onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
-                hasCustomApiKey={Boolean(apiKey)}
-                onOpenTeacherModal={() => setIsTeacherModalOpen(true)}
-                activeAssignment={activeAssignment}
-              />
-
-              <SlideRack
-                total={questions.length}
-                currentIndex={currentIndex}
-                answers={answers}
-                onSelectSlide={handleSelectSlide}
-                showingSummary={showingSummary}
-                onShowSummary={handleShowSummary}
-              />
-
               <main>
                 {showingSummary ? (
                   <SessionSummary
@@ -853,21 +819,29 @@ export default function App() {
                     )}
                   />
                 ) : (
-                  currentQuestion && (
-                    <SlideCard
-                      question={currentQuestion}
-                      slideIndex={currentIndex}
-                      totalSlides={questions.length}
-                      state={currentAnswerState}
-                      onUpdateInput={handleUpdateInput}
-                      onSubmitAnswer={handleSubmitAnswer}
-                      onResetSlide={handleResetSlide}
-                      onNextSlide={handleNextSlide}
-                      isLastSlide={currentIndex === questions.length - 1}
-                      topicLevel={selectedLevel}
-                      onPasteAttempt={handlePasteAttempt}
-                    />
-                  )
+                  <SchoolAISpace
+                    topic={activeTopic}
+                    questions={questions}
+                    answers={answers}
+                    activeAssignment={activeAssignment}
+                    activeScaffoldStage={activeScaffoldStage}
+                    studentName={studentName}
+                    studentId={currentStudentId}
+                    className={className}
+                    selectedLevel={selectedLevel}
+                    speechEnabled={speechEnabled}
+                    onToggleSpeech={() => setSpeechEnabled(!speechEnabled)}
+                    onUpdateInput={handleUpdateInput}
+                    onSubmitAnswer={handleSubmitAnswer}
+                    onResetSlide={handleResetSlide}
+                    onCompleteSpace={handleShowSummary}
+                    onExit={() => {
+                      setIsSessionActive(false);
+                      setPortalMode('student');
+                    }}
+                    tabSwitchCount={tabSwitchCount}
+                    copyPasteAttemptCount={copyPasteAttemptCount}
+                  />
                 )}
               </main>
             </div>

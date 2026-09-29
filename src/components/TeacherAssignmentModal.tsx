@@ -115,7 +115,7 @@ export const TeacherAssignmentModal: React.FC<TeacherAssignmentModalProps> = ({
       topicTitle: topicObj.title,
       level,
       learningOutcomes: learningOutcomes.filter((o) => o.trim().length > 0),
-      instructions: 'Complete all slides. Direct typing required. Tab switching and copy-pasting are strictly monitored.',
+      instructions: 'Complete all Space inquiry milestones. Direct typing required. Tab switching and copy-pasting are strictly monitored.',
       antiCheat: {
         disableCopyPaste,
         disableTabSwitch,
@@ -316,7 +316,7 @@ export const TeacherAssignmentModal: React.FC<TeacherAssignmentModalProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-mono-custom font-bold text-amber-300 uppercase flex items-center gap-1.5">
                     <Target className="w-4 h-4 text-amber-400" />
-                    Pinned Learning Outcomes (Shown at Top of Every Student Slide)
+                    Pinned Learning Outcomes (Shown in Student Socratic Space)
                   </label>
                   <span className="text-[11px] font-mono-custom text-blue-300">
                     {learningOutcomes.length} outcomes configured
