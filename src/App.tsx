@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TOPICS } from './data/topics';
+import { TOPICS, getOrCreateTopic } from './data/topics';
 import {
   SlideAnswerState,
   DialogueTurn,
@@ -173,7 +173,7 @@ export default function App() {
   const [currentTopic, setCurrentTopic] = useState<Topic>(() => {
     const urlAssignment = parseAssignmentFromUrl();
     if (urlAssignment) {
-      const foundTopic = TOPICS.find((t) => t.id === urlAssignment.topicId);
+      const foundTopic = getOrCreateTopic(urlAssignment.topicId, urlAssignment.topicTitle, urlAssignment.level);
       if (foundTopic) return foundTopic;
     }
     const found = TOPICS.find((t) => t.id === loadStoredTopicId('1-classification-living-organisms'));
@@ -226,7 +226,7 @@ export default function App() {
     setTabSwitchCount(0);
     setCopyPasteAttemptCount(0);
 
-    const foundTopic = TOPICS.find((t) => t.id === assignment.topicId);
+    const foundTopic = getOrCreateTopic(assignment.topicId, assignment.topicTitle, assignment.level);
     const targetTopic = foundTopic || currentTopic;
 
     saveStoredAnswers(currentTopic.id, answers);

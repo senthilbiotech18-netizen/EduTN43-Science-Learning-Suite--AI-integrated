@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TeacherAssignment, Topic } from '../types';
-import { TOPICS } from '../data/topics';
+import { TOPICS, getOrCreateTopic } from '../data/topics';
 import {
   saveNewAssignment,
   createAssignmentShareUrl,
@@ -46,6 +46,8 @@ export const TeacherAssignmentModal: React.FC<TeacherAssignmentModalProps> = ({
   const [className, setClassName] = useState('Grade 8 Biology - Section A');
   const [teacherName, setTeacherName] = useState('Dr. Senthil Kumar');
   const [selectedTopicId, setSelectedTopicId] = useState(currentTopic.id);
+  const [isCustomTopic, setIsCustomTopic] = useState(false);
+  const [customTopicName, setCustomTopicName] = useState('');
   const [level, setLevel] = useState(currentTopic.level);
   const [code, setCode] = useState(() => `TASK-${Math.floor(100 + Math.random() * 900)}`);
   const [disableTabSwitch, setDisableTabSwitch] = useState(true);
@@ -75,6 +77,13 @@ export const TeacherAssignmentModal: React.FC<TeacherAssignmentModalProps> = ({
   };
 
   const handleTopicChange = (topicId: string) => {
+    if (topicId === '__custom__') {
+      setIsCustomTopic(true);
+      setSelectedTopicId('__custom__');
+      setTitle(customTopicName ? `Class Assignment: ${customTopicName}` : 'Class Assignment: Science Inquiry');
+      return;
+    }
+    setIsCustomTopic(false);
     setSelectedTopicId(topicId);
     const found = TOPICS.find((t) => t.id === topicId);
     if (found) {
@@ -91,7 +100,10 @@ export const TeacherAssignmentModal: React.FC<TeacherAssignmentModalProps> = ({
 
   const handleCreateAssignment = (e: React.FormEvent) => {
     e.preventDefault();
-    const topicObj = TOPICS.find((t) => t.id === selectedTopicId) || currentTopic;
+    const cleanCustom = customTopicName.trim();
+    const topicObj = isCustomTopic && cleanCustom
+      ? getOrCreateTopic(undefined, cleanCustom, level)
+      : (TOPICS.find((t) => t.id === selectedTopicId) || currentTopic);
 
     const assignment: TeacherAssignment = {
       id: `asg-${Date.now()}`,
@@ -243,12 +255,30 @@ export const TeacherAssignmentModal: React.FC<TeacherAssignmentModalProps> = ({
                     onChange={(e) => handleTopicChange(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg bg-[#0C1A2E] border border-blue-400/40 text-sm text-white font-serif-custom focus:ring-2 focus:ring-amber-400 outline-none"
                   >
+                    <option value="__custom__">✍️ Custom Topic (Enter your own topic)...</option>
                     {TOPICS.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.subject}: {t.title} ({t.level})
                       </option>
                     ))}
                   </select>
+
+                  {isCustomTopic && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        value={customTopicName}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomTopicName(val);
+                          setTitle(`Class Assignment: ${val}`);
+                        }}
+                        placeholder="Type any science curriculum topic..."
+                        required
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#081322] border border-cyan-400/50 text-sm text-cyan-200 placeholder-blue-300/40 focus:ring-2 focus:ring-cyan-400 outline-none font-serif-custom"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>

@@ -6,7 +6,7 @@ import {
   ScaffoldStage,
   Topic,
 } from '../types';
-import { TOPICS } from '../data/topics';
+import { TOPICS, getOrCreateTopic } from '../data/topics';
 import {
   saveAssignment,
   saveStudent,
@@ -83,11 +83,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
 
   // Form state for creating a new scaffold assignment
-  const [newTitle, setNewTitle] = useState('Cell Energy & Respiration');
+  // Starts with NO prefilled topic per teacher requirement so any topic can be freely entered
+  const [newTopicTitle, setNewTopicTitle] = useState('');
+  const [newTitle, setNewTitle] = useState('');
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
   const [newCode, setNewCode] = useState(`BIO-SC-0${assignments.length + 1}`);
-  const [newClass, setNewClass] = useState('Grade 8A');
+  const [newClass, setNewClass] = useState('MYP 2C');
   const [newTeacher, setNewTeacher] = useState('Mr. Senthilkumar');
-  const [newTopicId, setNewTopicId] = useState(TOPICS[0].id);
   const [newDueDate, setNewDueDate] = useState('2026-09-25');
   const [newInstructions, setNewInstructions] = useState(
     'Complete Scaffold Learning 1 (Concept Acquisition) followed by Scaffold Learning 2 (Reasoning & Evaluation). Download your verified PDF and submit your answers to the cloud.'
@@ -348,8 +350,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanTopic = newTopicTitle.trim();
+    if (!cleanTopic) {
+      alert('Please enter a Science Curriculum Topic before publishing.');
+      return;
+    }
+
     setIsPublishing(true);
-    const chosenTopic = TOPICS.find((t) => t.id === newTopicId) || TOPICS[0];
+    const chosenTopic = getOrCreateTopic(undefined, cleanTopic, 'MYP 1-5');
+    const assignmentTitle = newTitle.trim() || cleanTopic;
 
     const scaffolds: ScaffoldStage[] = [
       {
@@ -371,16 +380,16 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     const newAssignment: TeacherAssignment = {
       id: `asg-${Date.now()}`,
       code: newCode.trim(),
-      title: newTitle.trim(),
+      title: assignmentTitle,
       className: newClass,
       teacherName: newTeacher.trim(),
       topicId: chosenTopic.id,
-      topicTitle: chosenTopic.title,
+      topicTitle: cleanTopic,
       level: chosenTopic.level,
       slideCount: 6,
       learningOutcomes: [
-        'Recall and state fundamental scientific definitions accurately (Strand i)',
-        'Synthesize and analyze biological interactions and organelle dynamics (Strand ii)',
+        `Recall and state fundamental scientific definitions and principles of ${cleanTopic} (Strand i)`,
+        `Synthesize and analyze scientific interactions, processes, and applications in ${cleanTopic} (Strand ii)`,
       ],
       instructions: newInstructions,
       scaffolds: scaffolds,
@@ -397,6 +406,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     setIsPublishing(false);
     setPublishSuccess(true);
     setTimeout(() => setPublishSuccess(false), 3000);
+
+    // Keep fields reset with no prefilled topics
+    setNewTopicTitle('');
+    setNewTitle('');
+    setTitleManuallyEdited(false);
+    setNewCode(`BIO-SC-0${assignments.length + 2}`);
     alert(`Scaffold Learning Assignment "${newAssignment.title}" published successfully to ${newAssignment.className}!`);
   };
 
@@ -728,9 +743,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <input
                   type="text"
                   value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
+                  onChange={(e) => {
+                    setNewTitle(e.target.value);
+                    setTitleManuallyEdited(true);
+                  }}
+                  placeholder="e.g. Science Scaffold Learning Task"
                   required
-                  className="w-full bg-[#071322] border border-blue-400/40 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full bg-[#071322] border border-blue-400/40 rounded-xl px-3.5 py-2 text-sm text-white placeholder-blue-300/40 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
 
@@ -773,17 +792,29 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <label className="block text-xs font-semibold text-blue-200 mb-1 font-sans">
                   Science Curriculum Topic <span className="text-cyan-400">*</span>
                 </label>
-                <select
-                  value={newTopicId}
-                  onChange={(e) => setNewTopicId(e.target.value)}
-                  className="w-full bg-[#071322] border border-blue-400/40 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
+                <input
+                  type="text"
+                  value={newTopicTitle}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewTopicTitle(val);
+                    if (!titleManuallyEdited) {
+                      setNewTitle(val);
+                    }
+                  }}
+                  required
+                  placeholder="Enter any curriculum topic (e.g. Genetics, Human Circulation, Acids...)"
+                  list="science-curriculum-topic-options"
+                  className="w-full bg-[#071322] border border-blue-400/40 rounded-xl px-3.5 py-2 text-sm text-white placeholder-blue-300/40 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <datalist id="science-curriculum-topic-options">
                   {TOPICS.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.title} ({t.level})
-                    </option>
+                    <option key={t.id} value={t.title} />
                   ))}
-                </select>
+                </datalist>
+                <p className="text-[11px] text-blue-300/70 mt-1">
+                  No prefilled topics. Type any topic you wish to assign.
+                </p>
               </div>
 
               <div>

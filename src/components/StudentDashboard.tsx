@@ -7,7 +7,7 @@ import {
   SlideAnswerState,
   StudentSubmission,
 } from '../types';
-import { TOPICS } from '../data/topics';
+import { TOPICS, getOrCreateTopic } from '../data/topics';
 import {
   BookOpen,
   UserCheck,
@@ -267,7 +267,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
 
             {activeAssignmentsList.map((assignment) => {
-              const matchedTopic = TOPICS.find((t) => t.id === assignment.topicId) || TOPICS[0];
+              const matchedTopic = getOrCreateTopic(assignment.topicId, assignment.topicTitle, assignment.level);
               const scaffolds = assignment.scaffolds && assignment.scaffolds.length > 0
                 ? assignment.scaffolds
                 : [

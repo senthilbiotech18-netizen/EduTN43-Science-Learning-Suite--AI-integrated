@@ -759,3 +759,77 @@ export function findMatchingTopic(query: string): Topic | undefined {
 
   return undefined;
 }
+
+/**
+ * Resolves an existing curriculum topic or synthesizes a complete,
+ * high-rigor scaffolded science topic for custom titles entered by teachers.
+ */
+export function getOrCreateTopic(topicId?: string, topicTitle?: string, level?: string): Topic {
+  if (topicId) {
+    const byId = findMatchingTopic(topicId);
+    if (byId) return byId;
+  }
+  if (topicTitle) {
+    const byTitle = findMatchingTopic(topicTitle);
+    if (byTitle) return byTitle;
+  }
+
+  const cleanTitle = (topicTitle || topicId || 'Science Curriculum Topic').trim();
+  const safeId = (topicId || cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')).replace(/^-+|-+$/g, '') || `custom-${Date.now()}`;
+  const effectiveLevel = level || 'MYP 1-5';
+
+  return {
+    id: safeId,
+    title: cleanTitle,
+    level: effectiveLevel,
+    subject: 'Biology',
+    description: `Curriculum study and socratic inquiry on ${cleanTitle}`,
+    badgeColor: '#1E40AF',
+    icon: 'Sparkles',
+    questions: [
+      {
+        id: 1,
+        strand: 'i',
+        prompt: `State and outline the fundamental definition, primary purpose, or key components of "${cleanTitle}".`,
+        target: `Accurate scientific terminology, clear definition, and identification of key elements of ${cleanTitle}.`,
+        hint: `Define core terms precisely and state the primary biological or scientific function.`,
+      },
+      {
+        id: 2,
+        strand: 'i',
+        prompt: `Describe the structural organization, underlying mechanisms, or conditions required in "${cleanTitle}".`,
+        target: `Detailed explanation of structures, stages, or physiological/chemical interactions involved in ${cleanTitle}.`,
+        hint: `Break down the steps or anatomical/molecular parts involved in the process.`,
+      },
+      {
+        id: 3,
+        strand: 'i',
+        prompt: `Outline how "${cleanTitle}" links to other scientific systems, organisms, or environmental balances.`,
+        target: `Interdependence, balance, and systemic connections relating to ${cleanTitle}.`,
+        hint: `Consider cause-and-effect and what happens when this balance is altered.`,
+      },
+      {
+        id: 4,
+        strand: 'ii',
+        prompt: `Apply your understanding of "${cleanTitle}" to explain a realistic scenario, experiment, or everyday phenomenon.`,
+        target: `Application of scientific principles to novel context or problem-solving related to ${cleanTitle}.`,
+        hint: `Use scientific reasoning to explain why the observed outcome happens.`,
+      },
+      {
+        id: 5,
+        strand: 'ii',
+        prompt: `Analyze what would happen if a critical factor or variable in "${cleanTitle}" was damaged, inhibited, or altered.`,
+        target: `Predictive analysis of disruption, consequences to the system, and biochemical/physiological impact.`,
+        hint: `Trace the chain reaction if one component fails or is altered.`,
+      },
+      {
+        id: 6,
+        strand: 'ii',
+        prompt: `Evaluate the scientific significance of "${cleanTitle}" and propose a scientific question, hypothesis, or solution to investigate it further.`,
+        target: `Higher-order evaluation, hypothesis formulation, or inquiry design relevant to ${cleanTitle}.`,
+        hint: `Synthesize your insights and formulate an evidence-based conclusion or scientific hypothesis.`,
+      },
+    ],
+  };
+}
+
