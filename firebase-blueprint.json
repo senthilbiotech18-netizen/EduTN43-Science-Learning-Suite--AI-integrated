@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "assignment": {
+      "title": "Assignment",
+      "description": "Scaffold learning assignment created by teacher for a class",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "className": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "topicId": { "type": "string" },
+        "topicTitle": { "type": "string" },
+        "level": { "type": "string" },
+        "scaffoldCount": { "type": "number" },
+        "instructions": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["code", "title", "className", "topicId", "topicTitle", "level"]
+    },
+    "student": {
+      "title": "Student",
+      "description": "Student roster record with ID and class",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "name": { "type": "string" },
+        "className": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "name", "className"]
+    },
+    "submission": {
+      "title": "Submission",
+      "description": "Student completed scaffold learning record with rubric score and dialogue",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "className": { "type": "string" },
+        "assignmentId": { "type": "string" },
+        "assignmentCode": { "type": "string" },
+        "scaffoldNumber": { "type": "number" },
+        "scaffoldTitle": { "type": "string" },
+        "criterionAGrade": { "type": "number" },
+        "exceedingCount": { "type": "number" },
+        "totalSlides": { "type": "number" },
+        "totalTurns": { "type": "number" },
+        "tabSwitchCount": { "type": "number" },
+        "copyPasteAttemptCount": { "type": "number" },
+        "pdfDownloaded": { "type": "boolean" },
+        "submittedAt": { "type": "string" },
+        "teacherFeedback": { "type": "string" }
+      },
+      "required": ["studentId", "studentName", "className", "scaffoldNumber", "criterionAGrade", "submittedAt"]
+    }
+  },
+  "firestore": {
+    "/assignments/{assignmentId}": {
+      "schema": { "$ref": "#/entities/assignment" },
+      "description": "Published teacher assignments and scaffold learning curriculum"
+    },
+    "/students/{studentDocId}": {
+      "schema": { "$ref": "#/entities/student" },
+      "description": "Roster of students with unique studentId and assigned class"
+    },
+    "/submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/submission" },
+      "description": "Student work submissions and historical scaffold records"
+    }
+  }
+}

@@ -14,12 +14,12 @@ interface SlideRackProps {
 export const SlideRack: React.FC<SlideRackProps> = ({
   total,
   currentIndex,
-  answers,
+  answers = [],
   onSelectSlide,
   showingSummary,
   onShowSummary,
 }) => {
-  const hasStartedAny = answers.some((a) => a.history.length > 0);
+  const hasStartedAny = (answers || []).some((a) => (a?.history?.length || 0) > 0);
 
   return (
     <div className="flex items-center justify-between flex-wrap gap-3 mb-6">

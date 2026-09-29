@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Question, SlideAnswerState, PastSessionRecord } from '../types';
-import { CheckCircle2, AlertTriangle, ArrowLeft, Download, RefreshCw, Award, Camera, Printer, Sparkles, User, ShieldCheck, GraduationCap, History, Trash2 } from 'lucide-react';
+import { Question, SlideAnswerState, PastSessionRecord, TeacherAssignment, ScaffoldStage } from '../types';
+import { CheckCircle2, AlertTriangle, ArrowLeft, Download, RefreshCw, Award, Camera, Printer, Sparkles, User, ShieldCheck, GraduationCap, History, Trash2, SpellCheck, Lock, ShieldAlert, School, Check, CloudUpload, FolderHeart, ArrowRight } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -9,12 +9,22 @@ interface SessionSummaryProps {
   answers: SlideAnswerState[];
   onReviewSlide: (index: number) => void;
   onRestart: () => void;
+  onNewTopic?: () => void;
   studentName: string;
   onUpdateStudentName: (name: string) => void;
   className: string;
   onUpdateClassName: (name: string) => void;
   pastSessions?: PastSessionRecord[];
   onClearHistory?: () => void;
+  activeAssignment?: TeacherAssignment | null;
+  tabSwitchCount?: number;
+  copyPasteAttemptCount?: number;
+  studentId?: string;
+  activeScaffoldStage?: ScaffoldStage | null;
+  onSaveToFirebase?: () => Promise<void>;
+  onGoToPortfolio?: () => void;
+  onGoToNextScaffold?: () => void;
+  hasNextScaffold?: boolean;
 }
 
 
@@ -36,15 +46,27 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
   answers,
   onReviewSlide,
   onRestart,
+  onNewTopic,
   studentName,
   onUpdateStudentName,
   className,
   onUpdateClassName,
   pastSessions = [],
   onClearHistory,
+  activeAssignment,
+  tabSwitchCount = 0,
+  copyPasteAttemptCount = 0,
+  studentId = 'GSIS-2024-001',
+  activeScaffoldStage,
+  onSaveToFirebase,
+  onGoToPortfolio,
+  onGoToNextScaffold,
+  hasNextScaffold,
 }) => {
   const [showScreenshotMode, setShowScreenshotMode] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSubmittingCloud, setIsSubmittingCloud] = useState(false);
+  const [cloudSubmitted, setCloudSubmitted] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);
 
   const counts = {
@@ -70,6 +92,28 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
         note: latestFeedback.gap || latestFeedback.followUp || 'Worth reviewing this organelle concept in depth.',
       });
     }
+  });
+
+  // Aggregate all spotted biological spelling corrections across all slides
+  const allSpellingCorrections: { slide: number; original: string; correction: string; explanation?: string }[] = [];
+  answers.forEach((ans, idx) => {
+    ans.history.forEach((turn) => {
+      if (turn.feedback?.spellingErrors) {
+        turn.feedback.spellingErrors.forEach((err) => {
+          const exists = allSpellingCorrections.some(
+            (c) => c.slide === idx + 1 && c.original.toLowerCase() === err.original.toLowerCase()
+          );
+          if (!exists) {
+            allSpellingCorrections.push({
+              slide: idx + 1,
+              original: err.original,
+              correction: err.correction,
+              explanation: err.explanation,
+            });
+          }
+        });
+      }
+    });
   });
 
   const total = questions.length;
@@ -253,6 +297,14 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
     text += `Descriptor: ${gradeDescriptor}\n`;
     text += `Badges Earned: ${earnedBadges.map(b => `${b.icon} ${b.title}`).join(', ')}\n`;
     text += `Overall Status: ${isAllExceeding ? 'ALL SLIDES AT EXCEEDING LEVEL' : `${exceedingCount}/${total} Slides at Exceeding Level`}\n`;
+    if (allSpellingCorrections.length > 0) {
+      text += `Spotted Biological Spelling Corrections (${allSpellingCorrections.length}):\n`;
+      allSpellingCorrections.forEach((c) => {
+        text += `- Slide ${c.slide}: "${c.original}" -> "${c.correction}" ${c.explanation ? `(${c.explanation})` : ''}\n`;
+      });
+    } else {
+      text += `Biological Spelling Accuracy: 100% (No biological terminology spelling errors spotted)\n`;
+    }
     text += `-------------------------------------------------------\n\n`;
 
     answers.forEach((ans, i) => {
@@ -275,8 +327,101 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleCloudSubmit = async () => {
+    if (!onSaveToFirebase) return;
+    setIsSubmittingCloud(true);
+    try {
+      await onSaveToFirebase();
+      setCloudSubmitted(true);
+    } catch (err) {
+      console.error('Firebase save error:', err);
+    } finally {
+      setIsSubmittingCloud(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Scaffold Learning & Cloud Submission Header Bar */}
+      {activeScaffoldStage && (
+        <div className="bg-gradient-to-r from-[#0C1F38] via-[#102B4E] to-[#0A1A30] border-2 border-cyan-400/50 rounded-2xl p-5 md:p-6 shadow-2xl text-white">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 text-xs font-bold font-sans">
+                  Scaffold Learning {activeScaffoldStage.scaffoldNumber}
+                </span>
+                <span className="text-xs text-blue-300 font-mono">
+                  Student ID: {studentId}
+                </span>
+                {cloudSubmitted && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 text-xs font-semibold flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    Saved to Cloud &amp; Portfolio
+                  </span>
+                )}
+              </div>
+              <h3 className="text-xl md:text-2xl font-bold font-sans">
+                {activeScaffoldStage.title}
+              </h3>
+              <p className="text-xs text-blue-200/80 font-sans mt-0.5">
+                {activeScaffoldStage.description}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleCloudSubmit}
+                disabled={isSubmittingCloud || cloudSubmitted}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-lg transition-all cursor-pointer ${
+                  cloudSubmitted
+                    ? 'bg-emerald-700 text-white cursor-default'
+                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white'
+                }`}
+              >
+                <CloudUpload className="w-4 h-4" />
+                <span>
+                  {isSubmittingCloud
+                    ? 'Saving to Firebase...'
+                    : cloudSubmitted
+                    ? '✓ Submitted to Teacher & Cloud'
+                    : 'Submit Work to Firebase'}
+                </span>
+              </button>
+
+              <button
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm bg-emerald-700 hover:bg-emerald-600 text-white shadow-lg transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-4 h-4 text-emerald-200" />
+                <span>{isGeneratingPDF ? 'Generating...' : 'Download PDF Report'}</span>
+              </button>
+
+              {onGoToPortfolio && (
+                <button
+                  onClick={onGoToPortfolio}
+                  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 hover:text-white border border-indigo-400/40 text-xs font-medium transition-all cursor-pointer"
+                >
+                  <FolderHeart className="w-4 h-4 text-indigo-300" />
+                  <span>View My Portfolio Link</span>
+                </button>
+              )}
+
+              {hasNextScaffold && onGoToNextScaffold && (
+                <button
+                  onClick={onGoToNextScaffold}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-900 font-bold text-xs md:text-sm shadow-md transition-all cursor-pointer"
+                >
+                  <span>Proceed to Scaffold {activeScaffoldStage.scaffoldNumber + 1}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Header Controls */}
       <div className="bg-[#F4EFE2] text-[#0E1B1F] rounded-xl p-6 md:p-8 shadow-2xl border border-[#C9C2AE]">
         <div className="flex justify-between items-start flex-wrap gap-4 border-b border-[#C9C2AE] pb-4 mb-6">
@@ -316,6 +461,15 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
               <Download className="w-3.5 h-3.5 text-[#2C5F8A]" />
               Export Text
             </button>
+            {onNewTopic && (
+              <button
+                onClick={onNewTopic}
+                className="font-mono-custom text-xs font-bold px-3 py-2 rounded bg-amber-500 hover:bg-amber-400 text-[#0E1B1F] transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                New / Change Topic
+              </button>
+            )}
             <button
               onClick={onRestart}
               className="font-mono-custom text-xs font-semibold px-3 py-2 rounded bg-[#0E1B1F] text-[#F4EFE2] hover:bg-[#1E3A41] transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -526,6 +680,69 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
           </div>
         </div>
 
+        {/* Biological Terminology Spelling Review */}
+        <div className="bg-white border-1.5 border-[#C9C2AE] rounded-lg p-5 mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <h3 className="font-mono-custom text-xs font-bold text-[#2C5F8A] tracking-wider uppercase flex items-center gap-2">
+              <SpellCheck className="w-4 h-4 text-[#2C5F8A]" />
+              BIOLOGICAL TERMINOLOGY &amp; SPELLING REVIEW
+            </h3>
+            {allSpellingCorrections.length === 0 ? (
+              <span className="font-mono-custom text-[11px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                100% Scientific Spelling Accuracy
+              </span>
+            ) : (
+              <span className="font-mono-custom text-[11px] bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full font-bold">
+                {allSpellingCorrections.length} {allSpellingCorrections.length === 1 ? 'terminology correction' : 'terminology corrections'} spotted
+              </span>
+            )}
+          </div>
+
+          {allSpellingCorrections.length === 0 ? (
+            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-lg text-xs font-serif-custom text-emerald-950 flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Excellent scientific precision!</strong> All biological terminology was spelled accurately throughout your answers.
+              </span>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {allSpellingCorrections.map((corr, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-amber-50/60 rounded-lg border border-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                >
+                  <div className="flex items-center gap-2 font-mono-custom">
+                    <span className="font-bold text-[#2C5F8A] text-[11px]">Slide {corr.slide}:</span>
+                    <span className="line-through text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 font-bold">
+                      {corr.original}
+                    </span>
+                    <span className="text-amber-800 font-bold">➔</span>
+                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300 font-bold">
+                      {corr.correction}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {corr.explanation && (
+                      <span className="font-serif-custom text-[11px] text-amber-900 italic">
+                        {corr.explanation}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => onReviewSlide(corr.slide - 1)}
+                      className="font-mono-custom text-[11px] text-[#2C5F8A] hover:underline cursor-pointer ml-auto shrink-0"
+                    >
+                      Review slide &rarr;
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Misconceptions Check */}
         {misconceptions.length > 0 && (
           <div className="bg-white border-1.5 border-[#C9C2AE] rounded-lg p-5 mb-6">
@@ -662,6 +879,36 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Academic Integrity & Assignment Verification Seal in Certificate */}
+          {activeAssignment && (
+            <div className="bg-amber-50/80 border-2 border-amber-300 rounded-lg p-3.5 mb-4 flex flex-wrap items-center justify-between gap-3 font-mono-custom text-xs">
+              <div className="flex items-center gap-2.5">
+                <School className="w-5 h-5 text-amber-800 shrink-0" />
+                <div>
+                  <div className="font-bold text-amber-950">
+                    Official Class Task: {activeAssignment.title} (#{activeAssignment.code})
+                  </div>
+                  <div className="text-[11px] text-amber-900 font-serif-custom">
+                    Target Class: <strong>{activeAssignment.className}</strong> &bull; Assigned by <strong>{activeAssignment.teacherName}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 border ${
+                  tabSwitchCount === 0 && copyPasteAttemptCount === 0
+                    ? 'bg-emerald-100 border-emerald-400 text-emerald-800'
+                    : 'bg-rose-100 border-rose-400 text-rose-800'
+                }`}>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {tabSwitchCount === 0 && copyPasteAttemptCount === 0
+                    ? '100% Academic Integrity Verified'
+                    : `${tabSwitchCount} tab switches, ${copyPasteAttemptCount} paste blocks`}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Certificate Badges Strip */}
           <div className="bg-[#EAE3D2]/70 p-3.5 rounded-lg border border-[#C9C2AE] mb-6">

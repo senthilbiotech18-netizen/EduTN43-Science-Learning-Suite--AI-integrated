@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, RefreshCw, Volume2, VolumeX, Sparkles, Layers, GraduationCap, Download, Laptop, ChevronDown } from 'lucide-react';
-import { Topic } from '../types';
+import { BookOpen, RefreshCw, Volume2, VolumeX, Sparkles, Layers, GraduationCap, Download, Laptop, ChevronDown, KeyRound, School } from 'lucide-react';
+import { Topic, TeacherAssignment } from '../types';
 
 interface HeaderProps {
   topic: Topic;
   onOpenTopics: () => void;
   onOpenDiagrams: () => void;
   onReset: () => void;
+  onNewSession?: () => void;
   speechEnabled: boolean;
   onToggleSpeech: () => void;
   currentSlide: number;
@@ -15,6 +16,10 @@ interface HeaderProps {
   className?: string;
   selectedLevel?: string;
   onSelectLevel?: (level: string) => void;
+  onOpenApiKeyModal?: () => void;
+  hasCustomApiKey?: boolean;
+  onOpenTeacherModal?: () => void;
+  activeAssignment?: TeacherAssignment | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTopics,
   onOpenDiagrams,
   onReset,
+  onNewSession,
   speechEnabled,
   onToggleSpeech,
   currentSlide,
@@ -30,6 +36,10 @@ export const Header: React.FC<HeaderProps> = ({
   className = 'Science Explorer',
   selectedLevel = 'MYP 1–3 (Grade 6–8)',
   onSelectLevel,
+  onOpenApiKeyModal,
+  hasCustomApiKey = false,
+  onOpenTeacherModal,
+  activeAssignment = null,
 }) => {
   const isCellTopic = topic.id.includes('cell');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -141,8 +151,9 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <h1 className="font-mono-custom text-2xl md:text-3xl font-bold text-white mb-1 tracking-tight flex items-center gap-2">
-          {topic.title}
+        <h1 className="font-mono-custom text-2xl md:text-3xl font-bold text-white mb-1 tracking-tight flex flex-wrap items-center gap-2">
+          <span className="text-amber-300 font-extrabold text-xl md:text-2xl">Topic:</span>
+          <span>{topic.title}</span>
         </h1>
         <p className="text-sm text-blue-100/80 italic font-serif-custom max-w-2xl">
           {topic.description}
@@ -150,23 +161,62 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5">
+        {onOpenTeacherModal && (
+          <button
+            onClick={onOpenTeacherModal}
+            className="font-mono-custom text-xs font-bold px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-blue-950 transition-all flex items-center gap-1.5 shadow-md border border-amber-300 cursor-pointer"
+            title="Open Teacher Assignment Portal: Lock topics, set learning outcomes, and generate share links"
+          >
+            <School className="w-3.5 h-3.5 text-blue-950" />
+            <span>{activeAssignment ? `Class Task: ${activeAssignment.code}` : 'Teacher Assign'}</span>
+          </button>
+        )}
+
+        {!activeAssignment && onNewSession && (
+          <button
+            onClick={onNewSession}
+            className="font-mono-custom text-xs font-bold px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-[#0E1B1F] transition-all flex items-center gap-1.5 shadow-md border border-amber-300 cursor-pointer"
+            title="Choose or type a new topic to study"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>New / Change Topic</span>
+          </button>
+        )}
+
+        {onOpenApiKeyModal && (
+          <button
+            onClick={onOpenApiKeyModal}
+            className={`font-mono-custom text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 shadow-md border cursor-pointer ${
+              hasCustomApiKey
+                ? 'bg-amber-500 hover:bg-amber-400 text-blue-950 border-amber-300 ring-2 ring-amber-400/40'
+                : 'bg-blue-900/60 hover:bg-blue-800/80 text-blue-100 border-blue-400/40'
+            }`}
+            title={hasCustomApiKey ? 'Custom Gemini API Key is active. Click to manage.' : 'Enter your own Google Gemini API key'}
+          >
+            <KeyRound className={`w-3.5 h-3.5 ${hasCustomApiKey ? 'text-blue-950' : 'text-amber-300'}`} />
+            <span>{hasCustomApiKey ? 'API Key (Active)' : 'API Key'}</span>
+          </button>
+        )}
+
         <button
           onClick={handleInstallClick}
-          className="font-mono-custom text-xs font-bold px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all flex items-center gap-1.5 shadow-md border border-emerald-400/40 cursor-pointer animate-pulse hover:animate-none"
+          className="font-mono-custom text-xs font-bold px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all flex items-center gap-1.5 shadow-md border border-emerald-400/40 cursor-pointer"
           title="Download & Install EduTN43 Desktop/Chromebook App"
         >
           <Download className="w-4 h-4 text-emerald-200" />
-          <span>Download Chromebook App</span>
+          <span>Chromebook App</span>
         </button>
 
-        <button
-          onClick={onOpenTopics}
-          className="font-mono-custom text-xs font-bold px-3.5 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-md border border-blue-300/30"
-          title="Switch Subject or Topic"
-        >
-          <Layers className="w-4 h-4" />
-          Select Topic / Grade
-        </button>
+        {!activeAssignment && (
+          <button
+            onClick={onOpenTopics}
+            className="font-mono-custom text-xs font-bold px-3.5 py-2 rounded-lg bg-blue-500 hover:bg-blue-400 text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-md border border-blue-300/30"
+            title="Switch Subject or Topic"
+          >
+            <Layers className="w-4 h-4" />
+            Browse Topics
+          </button>
+        )}
 
         {isCellTopic && (
           <button

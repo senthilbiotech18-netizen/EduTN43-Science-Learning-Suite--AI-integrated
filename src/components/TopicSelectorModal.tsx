@@ -37,6 +37,7 @@ export const TopicSelectorModal: React.FC<TopicSelectorModalProps> = ({
   const [activeSubject, setActiveSubject] = useState<SubjectType | 'All'>('All');
   const [activeLevelFilter, setActiveLevelFilter] = useState<'All' | 'MYP 1-3' | 'MYP 4-5'>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [slideCountPref, setSlideCountPref] = useState<number>(5);
 
   if (!isOpen) return null;
 
@@ -92,7 +93,7 @@ export const TopicSelectorModal: React.FC<TopicSelectorModalProps> = ({
           </button>
         </div>
 
-        {/* Grade Level Selection Banner */}
+        {/* Grade Level & Slide Count Selection Banner */}
         <div className="bg-[#0E1B1F] p-4 border-b border-white/10 flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-[#E0AD63]" />
@@ -130,6 +131,30 @@ export const TopicSelectorModal: React.FC<TopicSelectorModalProps> = ({
               <span>🟦 MYP 4–5 (Grade 9–10)</span>
               <span className="text-[10px] bg-indigo-900/60 text-indigo-200 px-1.5 py-0.5 rounded ml-1">Advanced Rigor</span>
             </button>
+          </div>
+        </div>
+
+        {/* Slide Count Preference in Modal */}
+        <div className="bg-[#122229] px-5 py-3 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs font-mono-custom">
+          <div className="flex items-center gap-2 text-[#E0AD63]">
+            <Layers className="w-4 h-4" />
+            <span className="font-bold uppercase tracking-wider">Number of Slides for Session:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {[3, 5, 8, 12].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => setSlideCountPref(count)}
+                className={`px-3 py-1.5 rounded-lg border font-bold transition-all cursor-pointer ${
+                  slideCountPref === count
+                    ? 'bg-[#2C5F8A] text-white border-[#4F8FC7] shadow-sm'
+                    : 'bg-white/5 text-[#9FB0B6] border-white/10 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {count === 12 ? 'All (12 Slides)' : `${count} Slides`}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -176,7 +201,15 @@ export const TopicSelectorModal: React.FC<TopicSelectorModalProps> = ({
               <div
                 key={topic.id}
                 onClick={() => {
-                  onSelectTopic(topic);
+                  const slicedQuestions = topic.questions.slice(0, slideCountPref).map((q, idx) => ({
+                    ...q,
+                    id: idx + 1,
+                  }));
+                  onSelectTopic({
+                    ...topic,
+                    level: selectedLevel,
+                    questions: slicedQuestions,
+                  });
                   onClose();
                 }}
                 className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${

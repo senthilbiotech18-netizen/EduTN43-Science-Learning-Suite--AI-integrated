@@ -1,4 +1,5 @@
 import { DepthLevel, AIFeedback } from '../types';
+import { checkBiologicalSpelling } from './bioSpellChecker';
 
 export function evaluateAnswerOffline(
   _prompt: string,
@@ -89,6 +90,8 @@ export function evaluateAnswerOffline(
     followUp = `Re-read the key point above: Can you restate it in your own words?`;
   }
 
+  const spellingErrors = checkBiologicalSpelling(studentAnswer);
+
   return {
     praise,
     depth,
@@ -96,5 +99,6 @@ export function evaluateAnswerOffline(
     gap,
     followUp,
     exceedingAchieved: exceeding,
+    spellingErrors: spellingErrors.length > 0 ? spellingErrors : undefined,
   };
 }

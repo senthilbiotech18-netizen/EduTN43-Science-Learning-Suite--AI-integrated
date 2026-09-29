@@ -24,6 +24,12 @@ export interface Topic {
   organelles?: OrganelleInfo[];
 }
 
+export interface SpellingCorrection {
+  original: string;
+  correction: string;
+  explanation?: string;
+}
+
 export interface AIFeedback {
   depth: DepthLevel;
   misconception: boolean;
@@ -31,6 +37,7 @@ export interface AIFeedback {
   gap: string | null;
   followUp: string | null;
   exceedingAchieved?: boolean;
+  spellingErrors?: SpellingCorrection[];
 }
 
 export interface DialogueTurn {
@@ -59,7 +66,87 @@ export interface OrganelleInfo {
   color: string;
 }
 
+export interface ScaffoldStage {
+  scaffoldNumber: number; // 1, 2, 3...
+  title: string; // e.g. "Scaffold Learning 1: Core Recall & Foundational Concepts"
+  description: string;
+  targetOutcome: string;
+  questionIds: number[]; // question IDs from the topic assigned to this scaffold stage
+}
+
+export interface TeacherAssignment {
+  id: string;
+  code: string; // e.g. "BIO-7B", "CELL-9A"
+  title: string;
+  className: string;
+  teacherName: string;
+  topicId: string;
+  topicTitle: string;
+  level: string; // e.g. "MYP 1–3 (Grade 6–8)"
+  slideCount?: number; // Number of assigned slides (e.g. 3, 5, 8, 12)
+  learningOutcomes: string[]; // List of explicit learning outcomes
+  instructions?: string;
+  scaffolds?: ScaffoldStage[]; // List of scaffold stages (Scaffold Learning 1, 2, etc.)
+  antiCheat: {
+    disableCopyPaste: boolean;
+    disableTabSwitch: boolean;
+    maxViolationsAllowed?: number;
+  };
+  createdAt: string;
+  dueDate?: string;
+}
+
+export interface StudentRecord {
+  id: string;
+  studentId: string; // e.g. "GSIS-2024-001"
+  name: string;
+  className: string;
+  email?: string;
+  createdAt: string;
+  updatedAt?: string;
+  isDeleted?: boolean;
+}
+
+export interface SubmissionAnswerDetail {
+  questionId?: number;
+  slideIndex?: number;
+  prompt: string;
+  strand?: StrandType;
+  studentAnswer: string;
+  highestDepth: DepthLevel | null;
+  history?: DialogueTurn[];
+  feedback?: AIFeedback | string;
+  iterations?: number;
+}
+
+export interface StudentSubmission {
+  id: string;
+  studentId: string;
+  studentName: string;
+  className: string;
+  assignmentId: string;
+  assignmentCode: string;
+  topicId: string;
+  topicTitle: string;
+  scaffoldNumber: number; // 1, 2, 3
+  scaffoldTitle: string;
+  criterionAGrade: number; // 1 to 8
+  exceedingCount: number;
+  totalSlides: number;
+  totalTurns: number;
+  answers: SubmissionAnswerDetail[];
+  tabSwitchCount: number;
+  copyPasteAttemptCount: number;
+  pdfDownloaded?: boolean;
+  submittedAt: string;
+  teacherFeedback?: string;
+  teacherGradedAt?: string;
+}
+
+export type PortalMode = 'student' | 'teacher' | 'portfolio' | 'learning' | 'practice';
+
 export interface PastSessionRecord {
+
   id: string;
   timestamp: string;
   studentName: string;
@@ -70,6 +157,10 @@ export interface PastSessionRecord {
   totalTurns: number;
   topicId?: string;
   topicTitle?: string;
+  assignmentCode?: string;
+  tabSwitchCount?: number;
+  copyPasteAttemptCount?: number;
 }
+
 
 

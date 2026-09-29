@@ -114,7 +114,8 @@ export function calculateCriterionAGrade(answers: SlideAnswerState[], totalQuest
   let exceedingCount = 0;
   let totalTurns = 0;
 
-  answers.forEach((ans) => {
+  (answers || []).forEach((ans) => {
+    if (!ans) return;
     const depth = ans.highestDepth || 'surface';
     if (depth === 'extending' || ans.exceedingAchieved) {
       rawPoints += 4;
@@ -128,7 +129,7 @@ export function calculateCriterionAGrade(answers: SlideAnswerState[], totalQuest
     }
 
     if (ans.history) {
-      totalTurns += ans.history.filter((t) => t.sender === 'student').length;
+      totalTurns += ans.history.filter((t) => t && t.sender === 'student').length;
     }
   });
 
@@ -166,4 +167,25 @@ export function calculateCriterionAGrade(answers: SlideAnswerState[], totalQuest
 
   return { grade, gradeDescriptor, exceedingCount, totalTurns, rawPoints };
 }
+
+export function loadStoredApiKey(): string {
+  try {
+    return localStorage.getItem('cell_explorer_custom_api_key') || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+export function saveStoredApiKey(key: string): void {
+  try {
+    if (!key || key.trim() === '') {
+      localStorage.removeItem('cell_explorer_custom_api_key');
+    } else {
+      localStorage.setItem('cell_explorer_custom_api_key', key.trim());
+    }
+  } catch (e) {
+    console.error('Failed to save custom api key:', e);
+  }
+}
+
 

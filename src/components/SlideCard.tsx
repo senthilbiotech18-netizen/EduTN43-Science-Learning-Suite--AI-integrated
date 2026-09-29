@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Question, SlideAnswerState, DialogueTurn, AIFeedback } from '../types';
-import { Sparkles, HelpCircle, ArrowRight, RotateCcw, CheckCircle2, Award, MessageSquare, Send, ShieldAlert, Keyboard } from 'lucide-react';
+import { Sparkles, HelpCircle, ArrowRight, RotateCcw, CheckCircle2, Award, MessageSquare, Send, ShieldAlert, Keyboard, AlertCircle, SpellCheck, Check } from 'lucide-react';
+import { checkBiologicalSpelling } from '../utils/bioSpellChecker';
 
 interface SlideCardProps {
   question: Question;
@@ -13,6 +14,7 @@ interface SlideCardProps {
   onNextSlide: () => void;
   isLastSlide: boolean;
   topicLevel?: string;
+  onPasteAttempt?: () => void;
 }
 
 export const SlideCard: React.FC<SlideCardProps> = ({
@@ -26,6 +28,7 @@ export const SlideCard: React.FC<SlideCardProps> = ({
   onNextSlide,
   isLastSlide,
   topicLevel = 'MYP 2 & 3',
+  onPasteAttempt,
 }) => {
   const [showHint, setShowHint] = useState(false);
   const [pasteWarning, setPasteWarning] = useState(false);
@@ -45,42 +48,101 @@ export const SlideCard: React.FC<SlideCardProps> = ({
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
     setPasteWarning(true);
+    if (onPasteAttempt) {
+      onPasteAttempt();
+    }
     setTimeout(() => {
       setPasteWarning(false);
     }, 4500);
   };
 
-  const hasHistory = state.history.length > 0;
-  const studentTurns = state.history.filter((t) => t.sender === 'student').length;
+  const history = state?.history || [];
+  const hasHistory = history.length > 0;
+  const studentTurns = history.filter((t) => t.sender === 'student').length;
   const followUpCount = Math.max(0, studentTurns - 1);
   const isLowerGrade = !topicLevel || topicLevel.includes('PYP') || topicLevel.includes('MYP 1') || topicLevel.includes('MYP 2') || topicLevel.includes('MYP 3') || topicLevel.includes('Grade 6') || topicLevel.includes('Grade 7') || topicLevel.includes('Grade 8');
   const maxFollowUpsReached = isLowerGrade && followUpCount >= 5;
 
-  const latestTurn = hasHistory ? state.history[state.history.length - 1] : null;
+  const liveSpellingErrors = state.currentInput ? checkBiologicalSpelling(state.currentInput) : [];
+
+  const handleFixSpelling = (original: string, correction: string) => {
+    // Replace whole word occurrence in currentInput safely
+    const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+    const updated = state.currentInput.replace(regex, correction);
+    onUpdateInput(updated);
+  };
+
+  const latestTurn = hasHistory ? history[history.length - 1] : null;
   const latestFeedback = latestTurn?.feedback;
-  const isExceeding = state.exceedingAchieved;
+  const isExceeding = state?.exceedingAchieved;
+
+  const getVerdict = (fb?: AIFeedback): 'correct' | 'partial' | 'wrong' | 'unanswered' => {
+    if (!fb) return 'unanswered';
+    if (fb.exceedingAchieved || fb.depth === 'extending' || fb.depth === 'secure') {
+      return 'correct'; // GREEN: Right answer
+    }
+    if (fb.misconception || fb.depth === 'surface') {
+      return 'wrong'; // RED: Wrong answer / misconception
+    }
+    if (fb.depth === 'developing') {
+      return 'partial'; // YELLOW: Partially correct
+    }
+    return 'wrong';
+  };
+
+  // Calculate circular mastery level
+  const currentDepth = isExceeding
+    ? 'extending'
+    : (latestFeedback?.depth || state?.highestDepth || null);
+
+  let masteryPercent = 0;
+  let masteryLabel = 'Not Evaluated';
+  let masteryColor = '#94A3B8';
+
+  if (currentDepth === 'surface' || latestFeedback?.misconception) {
+    masteryPercent = 25;
+    masteryLabel = 'Needs Work / Wrong (25%)';
+    masteryColor = '#DC2626'; // RED
+  } else if (currentDepth === 'developing') {
+    masteryPercent = 50;
+    masteryLabel = 'Partially Correct (50%)';
+    masteryColor = '#CA8A04'; // YELLOW
+  } else if (currentDepth === 'secure') {
+    masteryPercent = 75;
+    masteryLabel = 'Secure / Right (75%)';
+    masteryColor = '#16A34A'; // GREEN
+  } else if (currentDepth === 'extending' || isExceeding) {
+    masteryPercent = 100;
+    masteryLabel = 'Mastered / Right (100%)';
+    masteryColor = '#16A34A'; // GREEN
+  }
+
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius; // ~125.66
+  const strokeDashoffset = circumference - (masteryPercent / 100) * circumference;
 
   const getBadgeStyle = (fb?: AIFeedback) => {
-    if (!fb) return 'bg-[#8A5A1E]/20 text-[#E0AD63] border-[#E0AD63]';
-    if (fb.exceedingAchieved || fb.depth === 'extending') {
-      return 'bg-[#4A7A3E] text-white border-[#8FBF7F] ring-2 ring-[#8FBF7F]/50';
+    const verdict = getVerdict(fb);
+    if (verdict === 'correct') {
+      return 'bg-emerald-600 text-white border-emerald-500 shadow-sm ring-2 ring-emerald-400/40';
     }
-    if (fb.depth === 'secure') {
-      return 'bg-[#2C5F8A]/30 text-[#4F8FC7] border-[#4F8FC7]';
+    if (verdict === 'partial') {
+      return 'bg-amber-500 text-amber-950 border-amber-400 shadow-sm ring-2 ring-amber-300/40';
     }
-    if (fb.misconception) {
-      return 'bg-[#A8425A]/20 text-[#E2839B] border-[#E2839B]';
+    if (verdict === 'wrong') {
+      return 'bg-rose-600 text-white border-rose-500 shadow-sm ring-2 ring-rose-400/40';
     }
-    return 'bg-[#8A5A1E]/20 text-[#E0AD63] border-[#E0AD63]';
+    return 'bg-slate-700 text-white border-slate-600';
   };
 
   const getLabel = (fb?: AIFeedback) => {
     if (!fb) return 'Formative Feedback';
-    if (fb.exceedingAchieved || fb.depth === 'extending') return '⭐ EXCEEDING LEVEL ATTAINED!';
-    if (fb.depth === 'secure') return 'Secure Level';
-    if (fb.misconception) return 'Misconception Flagged';
-    if (fb.depth === 'developing') return 'Developing Level';
-    return 'Getting Started Level';
+    if (fb.exceedingAchieved || fb.depth === 'extending') return '⭐ EXCEEDING LEVEL (CORRECT)';
+    if (fb.depth === 'secure') return '✓ RIGHT ANSWER (SECURE)';
+    if (fb.misconception) return '✕ INCORRECT (MISCONCEPTION FLAGGED)';
+    if (fb.depth === 'developing') return '⚡ PARTIALLY CORRECT (DEVELOPING)';
+    return '✕ NEEDS PRACTICE (WRONG)';
   };
 
   return (
@@ -101,15 +163,42 @@ export const SlideCard: React.FC<SlideCardProps> = ({
             </span>
           )}
         </span>
-        {question.hint && (
-          <button
-            onClick={() => setShowHint(!showHint)}
-            className="text-[11px] font-mono-custom text-[#6B6455] hover:text-[#0E1B1F] flex items-center gap-1 cursor-pointer bg-black/5 px-2.5 py-1 rounded border border-black/10"
-          >
-            <HelpCircle className="w-3 h-3" />
-            {showHint ? 'Hide hint' : 'Socratic Hint'}
-          </button>
-        )}
+
+        <div className="flex items-center gap-2">
+          {/* Circular Mastery Gauge Pill in Header */}
+          <div className="flex items-center gap-1.5 bg-white/90 px-2.5 py-1 rounded-full border border-[#C9C2AE] shadow-xs">
+            <div className="relative w-5 h-5 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 -rotate-90" viewBox="0 0 44 44">
+                <circle cx="22" cy="22" r="16" stroke="#E2E8F0" strokeWidth="4" fill="transparent" />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="16"
+                  stroke={masteryColor}
+                  strokeWidth="4"
+                  strokeDasharray={2 * Math.PI * 16}
+                  strokeDashoffset={2 * Math.PI * 16 - (masteryPercent / 100) * (2 * Math.PI * 16)}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-500 ease-out"
+                />
+              </svg>
+            </div>
+            <span className="font-mono-custom text-[10px] font-bold text-[#0E1B1F]">
+              Mastery: <span style={{ color: masteryColor }}>{masteryPercent}%</span>
+            </span>
+          </div>
+
+          {question.hint && (
+            <button
+              onClick={() => setShowHint(!showHint)}
+              className="text-[11px] font-mono-custom text-[#6B6455] hover:text-[#0E1B1F] flex items-center gap-1 cursor-pointer bg-black/5 px-2.5 py-1 rounded border border-black/10"
+            >
+              <HelpCircle className="w-3 h-3" />
+              {showHint ? 'Hide hint' : 'Socratic Hint'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Question Prompt */}
@@ -132,68 +221,199 @@ export const SlideCard: React.FC<SlideCardProps> = ({
         <div className="mb-6 space-y-4">
           <div className="font-mono-custom text-xs font-bold text-[#6B6455] uppercase tracking-wider border-b border-[#C9C2AE] pb-1 flex items-center gap-1.5">
             <MessageSquare className="w-3.5 h-3.5 text-[#2C5F8A]" />
-            Socratic Conversation History ({state.history.filter((t) => t.sender === 'student').length} turn{state.history.filter((t) => t.sender === 'student').length > 1 ? 's' : ''})
+            Socratic Conversation History ({studentTurns} turn{studentTurns > 1 ? 's' : ''})
           </div>
 
-          {state.history.map((turn, index) => {
+          {history.map((turn, index) => {
             if (turn.sender === 'student') {
+              const nextTurn = history[index + 1];
+              const fb = nextTurn?.feedback;
+              const verdict = getVerdict(fb);
+
               return (
-                <div key={turn.id} className="bg-white p-4 rounded-lg border border-[#C9C2AE] shadow-sm ml-2 md:ml-6">
-                  <div className="flex justify-between items-center text-[11px] font-mono-custom font-bold text-[#2C5F8A] mb-1.5">
-                    <span>YOUR RESPONSE (TURN {Math.floor(index / 2) + 1})</span>
-                    <span className="text-[10px] text-[#6B6455] font-normal">{turn.timestamp}</span>
+                <div
+                  key={turn.id}
+                  className={`p-4 rounded-xl border-2 shadow-xs ml-2 md:ml-6 transition-all ${
+                    verdict === 'correct'
+                      ? 'bg-emerald-50/70 border-emerald-400 border-l-8 border-l-emerald-600'
+                      : verdict === 'partial'
+                      ? 'bg-amber-50/70 border-amber-400 border-l-8 border-l-amber-500'
+                      : verdict === 'wrong'
+                      ? 'bg-rose-50/70 border-rose-400 border-l-8 border-l-rose-500'
+                      : 'bg-white border-[#C9C2AE]'
+                  }`}
+                >
+                  <div className="flex justify-between items-center text-[11px] font-mono-custom font-bold mb-2">
+                    <span className="text-[#2C5F8A]">YOUR RESPONSE (TURN {Math.floor(index / 2) + 1})</span>
+                    <div className="flex items-center gap-2">
+                      {verdict === 'correct' && (
+                        <span className="bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                          <CheckCircle2 className="w-3 h-3" /> Right Answer
+                        </span>
+                      )}
+                      {verdict === 'partial' && (
+                        <span className="bg-amber-500 text-amber-950 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                          <Sparkles className="w-3 h-3 text-amber-950" /> Partially Correct
+                        </span>
+                      )}
+                      {verdict === 'wrong' && (
+                        <span className="bg-rose-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                          <AlertCircle className="w-3 h-3" /> Wrong / Needs Attention
+                        </span>
+                      )}
+                      <span className="text-[10px] text-[#6B6455] font-normal">{turn.timestamp}</span>
+                    </div>
                   </div>
                   <p className="font-serif-custom text-sm text-[#0E1B1F] leading-relaxed whitespace-pre-wrap">
                     "{turn.text}"
                   </p>
+
+                  {/* Biological Spelling Spotted on Student Turn */}
+                  {(() => {
+                    const errors = turn.feedback?.spellingErrors || history[index + 1]?.feedback?.spellingErrors;
+                    if (!errors || errors.length === 0) return null;
+                    return (
+                      <div className="mt-3 pt-2.5 border-t border-rose-200/80 flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-mono-custom font-bold text-rose-900 bg-rose-100 border border-rose-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                          <SpellCheck className="w-3.5 h-3.5 text-rose-700" />
+                          Biological Spelling Spotted:
+                        </span>
+                        {errors.map((err, errIdx) => (
+                          <span
+                            key={errIdx}
+                            className="text-xs font-mono-custom bg-white border border-rose-300 px-2 py-0.5 rounded shadow-2xs flex items-center gap-1.5"
+                          >
+                            <span className="line-through text-rose-700 font-bold">{err.original}</span>
+                            <span className="text-gray-400 font-sans">➔</span>
+                            <span className="text-emerald-700 font-bold underline decoration-emerald-500 underline-offset-2">
+                              {err.correction}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             }
 
             if (turn.sender === 'ai' && turn.feedback) {
               const fb = turn.feedback;
+              const verdict = getVerdict(fb);
               const isExceedingTurn = fb.exceedingAchieved || fb.depth === 'extending';
 
               return (
                 <div
                   key={turn.id}
-                  className={`p-5 rounded-lg border-l-4 shadow-sm transition-all ${
-                    isExceedingTurn
-                      ? 'bg-[#4A7A3E]/15 border-[#4A7A3E] text-[#0E1B1F] ring-1 ring-[#8FBF7F]/30'
-                      : fb.misconception
-                      ? 'bg-[#A8425A]/10 border-[#A8425A] text-[#0E1B1F]'
-                      : 'bg-[#2C5F8A]/10 border-[#2C5F8A] text-[#0E1B1F]'
+                  className={`p-5 rounded-xl border-2 shadow-sm transition-all ${
+                    verdict === 'correct'
+                      ? 'bg-emerald-50/95 border-emerald-500 text-emerald-950 ring-2 ring-emerald-400/30'
+                      : verdict === 'partial'
+                      ? 'bg-amber-50/95 border-amber-400 text-amber-950 ring-2 ring-amber-300/30'
+                      : 'bg-rose-50/95 border-rose-400 text-rose-950 ring-2 ring-rose-300/30'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span
-                      className={`font-mono-custom text-[11px] font-bold px-2.5 py-0.5 rounded uppercase border tracking-wider flex items-center gap-1 ${getBadgeStyle(
+                      className={`font-mono-custom text-[11px] font-bold px-3 py-1 rounded-full uppercase border tracking-wider flex items-center gap-1.5 ${getBadgeStyle(
                         fb
                       )}`}
                     >
+                      {verdict === 'correct' ? (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      ) : verdict === 'partial' ? (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      ) : (
+                        <AlertCircle className="w-3.5 h-3.5" />
+                      )}
                       {getLabel(fb)}
                     </span>
                     <span className="text-[10px] font-mono-custom text-[#6B6455]">{turn.timestamp}</span>
                   </div>
 
-                  <p className="text-sm font-serif-custom text-[#0E1B1F] mb-2 leading-relaxed">
+                  <p className="text-sm font-serif-custom mb-2 leading-relaxed font-medium">
                     {fb.praise}
                   </p>
 
+                  {/* Biological Spelling Spotlight Box */}
+                  {fb.spellingErrors && fb.spellingErrors.length > 0 && (
+                    <div className="my-3 p-3.5 rounded-xl bg-amber-50/95 border-2 border-amber-400 shadow-xs">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md bg-amber-500 text-amber-950 flex items-center justify-center font-bold shadow-2xs shrink-0">
+                            <SpellCheck className="w-3.5 h-3.5 text-amber-950" />
+                          </div>
+                          <h5 className="font-mono-custom text-xs font-bold text-amber-950 uppercase tracking-wide">
+                            Biological Terminology Spelling Spotlight
+                          </h5>
+                        </div>
+                        <span className="text-[10px] font-mono-custom bg-amber-200/90 text-amber-950 px-2.5 py-0.5 rounded-full font-bold">
+                          {fb.spellingErrors.length} {fb.spellingErrors.length === 1 ? 'correction' : 'corrections'} spotted
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 mt-2">
+                        {fb.spellingErrors.map((err, errIdx) => (
+                          <div
+                            key={errIdx}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-amber-300/80 shadow-2xs"
+                          >
+                            <div className="flex items-center gap-2 text-xs font-mono-custom">
+                              <span className="line-through text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 font-bold">
+                                {err.original}
+                              </span>
+                              <span className="text-amber-800 font-bold">➔</span>
+                              <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-300 font-bold flex items-center gap-1">
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                {err.correction}
+                              </span>
+                            </div>
+
+                            {err.explanation && (
+                              <span className="text-xs font-serif-custom text-amber-900 bg-amber-50/80 px-2.5 py-1 rounded border border-amber-200/70">
+                                💡 {err.explanation}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <p className="text-[11px] font-serif-custom text-amber-900/90 mt-2.5 leading-relaxed">
+                        <strong>Criterion A Guidance:</strong> In IB Science, using accurate biological vocabulary with correct scientific spelling demonstrates thorough knowing and understanding.
+                      </p>
+                    </div>
+                  )}
+
                   {fb.gap && (
-                    <div className="text-xs font-serif-custom text-[#3A352B] mb-2 bg-white/70 p-2.5 rounded border border-[#C9C2AE]">
-                      <strong className="font-mono-custom text-[11px] text-[#8A5A1E] uppercase tracking-wide block mb-0.5">
-                        {isLowerGrade ? '💡 Concept Key & Rectification:' : 'Scaffolding Gap Pointer:'}
+                    <div className={`text-xs font-serif-custom mb-2 p-3 rounded-lg border ${
+                      verdict === 'correct'
+                        ? 'bg-white/80 border-emerald-300 text-emerald-950'
+                        : verdict === 'partial'
+                        ? 'bg-amber-100/90 border-amber-300 text-amber-950'
+                        : 'bg-rose-100/90 border-rose-300 text-rose-950'
+                    }`}>
+                      <strong className={`font-mono-custom text-[11px] uppercase tracking-wide block mb-0.5 ${
+                        verdict === 'correct' ? 'text-emerald-800' : verdict === 'partial' ? 'text-amber-800' : 'text-rose-800'
+                      }`}>
+                        {isLowerGrade ? '💡 Concept Key & Rectification:' : 'Scaffolding Guidance:'}
                       </strong>
                       {fb.gap}
                     </div>
                   )}
 
                   {fb.followUp && !isExceedingTurn && (
-                    <div className="mt-3 pt-2.5 border-t border-black/10 text-xs md:text-sm font-serif-custom text-[#0E1B1F] font-medium bg-[#EAE3D2]/70 p-3 rounded-md border border-[#C9C2AE]">
-                      <strong className="font-mono-custom text-xs font-bold text-[#2C5F8A] uppercase tracking-wide block mb-1 flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-[#E0AD63]" />
-                        Teacher Follow-up Question:
+                    <div className={`mt-3 pt-2.5 text-xs md:text-sm font-serif-custom font-medium p-3.5 rounded-lg border-2 ${
+                      verdict === 'correct'
+                        ? 'bg-white border-emerald-300 text-emerald-950'
+                        : verdict === 'partial'
+                        ? 'bg-white border-amber-400 text-amber-950'
+                        : 'bg-white border-rose-300 text-rose-950'
+                    }`}>
+                      <strong className={`font-mono-custom text-xs font-bold uppercase tracking-wide block mb-1 flex items-center gap-1 ${
+                        verdict === 'correct' ? 'text-emerald-800' : verdict === 'partial' ? 'text-amber-800' : 'text-rose-800'
+                      }`}>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Teacher Scaffolding Question:
                       </strong>
                       "{fb.followUp}"
                     </div>
@@ -266,6 +486,77 @@ export const SlideCard: React.FC<SlideCardProps> = ({
           </div>
         ) : (
           <div>
+            {/* Dedicated Move-to-Next-Slide or Continue Option Card */}
+            {hasHistory && (
+              <div className={`mb-5 p-4 rounded-xl border-2 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-300 ${
+                getVerdict(latestFeedback) === 'correct'
+                  ? 'bg-emerald-50/95 border-emerald-500 text-emerald-950 ring-2 ring-emerald-400/20'
+                  : getVerdict(latestFeedback) === 'partial'
+                  ? 'bg-amber-50/95 border-amber-400 text-amber-950 ring-2 ring-amber-300/20'
+                  : 'bg-rose-50/95 border-rose-400 text-rose-950 ring-2 ring-rose-300/20'
+              }`}>
+                <div className="flex items-center gap-3.5">
+                  {/* Large Circular Mastery Indicator */}
+                  <div className="relative w-14 h-14 flex items-center justify-center shrink-0 bg-white rounded-full shadow-inner border border-black/10">
+                    <svg className="w-14 h-14 -rotate-90" viewBox="0 0 52 52">
+                      <circle cx="26" cy="26" r={radius} stroke="#E2E8F0" strokeWidth="5" fill="transparent" />
+                      <circle
+                        cx="26"
+                        cy="26"
+                        r={radius}
+                        stroke={masteryColor}
+                        strokeWidth="5"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="round"
+                        fill="transparent"
+                        className="transition-all duration-700 ease-out"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="font-mono-custom text-xs font-bold leading-none" style={{ color: masteryColor }}>
+                        {masteryPercent}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-mono-custom text-sm font-bold flex items-center gap-2">
+                      <span>Status:</span>
+                      <span
+                        className="text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-white shadow-xs"
+                        style={{ backgroundColor: masteryColor }}
+                      >
+                        {masteryLabel}
+                      </span>
+                    </h4>
+                    <p className="text-xs font-serif-custom mt-1 leading-relaxed opacity-95">
+                      {getVerdict(latestFeedback) === 'correct' ? (
+                        <>Your answer is evaluated as <strong className="text-emerald-700">Right (Green)</strong>. You can move to the next slide now, or answer further follow-ups to cement Exceeding level!</>
+                      ) : getVerdict(latestFeedback) === 'partial' ? (
+                        <>Your answer is <strong className="text-amber-800">Partially Correct (Yellow)</strong>. Answer the teacher's follow-up question below to turn it Green, or proceed whenever you are ready!</>
+                      ) : (
+                        <>Your answer was evaluated as <strong className="text-rose-700">Incorrect / Misconception (Red)</strong>. Check the teacher's rectification guidance and try answering below to correct your score!</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onNextSlide}
+                  className={`w-full sm:w-auto font-mono-custom text-xs md:text-sm font-bold px-5 py-2.5 rounded-lg text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0 border active:scale-97 ${
+                    getVerdict(latestFeedback) === 'correct'
+                      ? 'bg-emerald-700 hover:bg-emerald-800 border-emerald-600'
+                      : getVerdict(latestFeedback) === 'partial'
+                      ? 'bg-amber-600 hover:bg-amber-700 border-amber-500'
+                      : 'bg-rose-700 hover:bg-rose-800 border-rose-600'
+                  }`}
+                >
+                  <span>{isLastSlide ? 'Finish Slide & View Certificate →' : 'Move to Next Slide →'}</span>
+                </button>
+              </div>
+            )}
+
             <div className="flex justify-between items-center mb-2">
               <label className="block font-mono-custom text-xs font-bold text-[#0E1B1F] uppercase tracking-wider">
                 {hasHistory
@@ -312,6 +603,38 @@ export const SlideCard: React.FC<SlideCardProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Live Biological Spelling Detection & Quick-Fix Bar */}
+            {liveSpellingErrors.length > 0 && (
+              <div className="mt-2.5 p-3 rounded-lg bg-amber-50/95 border-2 border-amber-300 text-xs font-mono-custom text-amber-950 flex flex-wrap items-center justify-between gap-2 shadow-xs animate-in fade-in duration-200">
+                <div className="flex items-center gap-2">
+                  <SpellCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span className="font-bold text-amber-900">
+                    Spelling Spotted in Biology Terminology ({liveSpellingErrors.length}):
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {liveSpellingErrors.map((err, errIdx) => (
+                    <button
+                      key={errIdx}
+                      type="button"
+                      onClick={() => handleFixSpelling(err.original, err.correction)}
+                      className="bg-white hover:bg-emerald-50 text-amber-950 hover:text-emerald-950 border border-amber-300 hover:border-emerald-500 px-2.5 py-1 rounded-md shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 group"
+                      title={`Click to auto-correct "${err.original}" to "${err.correction}"`}
+                    >
+                      <span className="line-through text-rose-700 font-bold">{err.original}</span>
+                      <span className="text-gray-400 font-sans">➔</span>
+                      <span className="text-emerald-700 font-bold underline decoration-emerald-500 underline-offset-2">
+                        {err.correction}
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-sans font-bold group-hover:bg-emerald-200">
+                        Fix
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Copy/Paste Attempt Security Warning Alert */}
             {pasteWarning && (

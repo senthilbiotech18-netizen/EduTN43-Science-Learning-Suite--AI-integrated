@@ -3,7 +3,7 @@ import { Topic } from '../../types';
 export const TOPIC_SET_2: Topic[] = [
   {
     id: '8-transport-in-plants',
-    title: '8. Transport in Plants',
+    title: '8. Transport in Plants: Xylem & Phloem',
     level: 'PYP to MYP 5',
     subject: 'Biology',
     description: 'Scaffolded from root water absorption to celery red dye experiments, xylem water columns, stomata transpiration, phloem translocation, and source/sink dynamics.',

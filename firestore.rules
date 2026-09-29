@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+
+    // Assignments collection - readable by all, validates required fields
+    match /assignments/{assignmentId} {
+      allow read: if true;
+      allow create, update: if incoming().title is string &&
+                               incoming().title.size() > 0 &&
+                               incoming().className is string;
+      allow delete: if true;
+    }
+
+    // Students roster collection - supports query by studentId, validates identity
+    match /students/{studentDocId} {
+      allow read: if true;
+      allow create, update: if incoming().studentId is string &&
+                               incoming().studentId.size() > 0 &&
+                               incoming().name is string &&
+                               incoming().className is string;
+      allow delete: if true;
+    }
+
+    // Submissions collection (Scaffold Learning completed student work)
+    match /submissions/{submissionId} {
+      allow read: if true;
+      allow create: if incoming().studentId is string &&
+                       incoming().studentId.size() > 0 &&
+                       incoming().studentName is string &&
+                       incoming().className is string &&
+                       incoming().scaffoldNumber is number &&
+                       incoming().criterionAGrade is number;
+      allow update: if incoming().studentId is string;
+      allow delete: if true;
+    }
+  }
+}

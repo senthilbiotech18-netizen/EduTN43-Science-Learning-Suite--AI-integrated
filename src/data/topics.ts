@@ -1,7 +1,10 @@
 import { Topic } from '../types';
 import { ORGANELLES } from './questions';
+import { TOPIC_SET_1 } from './topics/topicSet1';
+import { TOPIC_SET_2 } from './topics/topicSet2';
+import { TOPIC_SET_3 } from './topics/topicSet3';
 
-export const TOPICS: Topic[] = [
+const CORE_TOPICS: Topic[] = [
   {
     id: 'cell-organelles-structures',
     title: 'Cell Structure & Organelles',
@@ -670,3 +673,89 @@ export const TOPICS: Topic[] = [
     ]
   }
 ];
+
+export const TOPICS: Topic[] = [
+  ...CORE_TOPICS,
+  ...TOPIC_SET_1,
+  ...TOPIC_SET_2,
+  ...TOPIC_SET_3,
+];
+
+/**
+ * Intelligent topic matching helper that matches exact IDs, titles,
+ * curriculum numbers (e.g. "8", "Topic 8"), keywords (e.g. "xylem", "phloem", "transport in plants"),
+ * and fuzzy query variations.
+ */
+export function findMatchingTopic(query: string): Topic | undefined {
+  if (!query || !query.trim()) return undefined;
+  const q = query.trim().toLowerCase();
+
+  // 1. Direct ID match
+  const exactId = TOPICS.find((t) => t.id.toLowerCase() === q);
+  if (exactId) return exactId;
+
+  // 2. Direct Title match
+  const exactTitle = TOPICS.find((t) => t.title.toLowerCase() === q);
+  if (exactTitle) return exactTitle;
+
+  // 3. Keyword-based matching for prominent curriculum topics
+  const cleanQ = q.replace(/^\d+\.\s*/, '').replace(/[:\-_,]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Transport in Plants / Xylem / Phloem
+  if (
+    cleanQ.includes('xylem') ||
+    cleanQ.includes('phloem') ||
+    cleanQ.includes('pholem') || // handle common student typo
+    (cleanQ.includes('transport') && cleanQ.includes('plant'))
+  ) {
+    const plantTopic = TOPICS.find((t) => t.id === '8-transport-in-plants');
+    if (plantTopic) return plantTopic;
+  }
+
+  // Cell Structure / Organelles
+  if (
+    (cleanQ.includes('cell') && (cleanQ.includes('organelle') || cleanQ.includes('structure') || cleanQ.includes('membrane') || cleanQ.includes('mitochondria'))) ||
+    cleanQ === 'cell' ||
+    cleanQ === 'cells'
+  ) {
+    const cellTopic = TOPICS.find((t) => t.id === 'cell-organelles-structures');
+    if (cellTopic) return cellTopic;
+  }
+
+  // Plant Nutrition / Photosynthesis
+  if (cleanQ.includes('photo') || cleanQ.includes('chloroplast') || cleanQ.includes('light reaction')) {
+    const photoTopic = TOPICS.find((t) => t.id === '6-plant-nutrition-photosynthesis' || t.id === 'photosynthesis-respiration');
+    if (photoTopic) return photoTopic;
+  }
+
+  // Enzymes
+  if (cleanQ.includes('enzyme') || cleanQ.includes('catalyst') || cleanQ.includes('active site')) {
+    const enzymeTopic = TOPICS.find((t) => t.id === '5-enzymes-catalysis');
+    if (enzymeTopic) return enzymeTopic;
+  }
+
+  // Diffusion / Osmosis
+  if (cleanQ.includes('osmosis') || cleanQ.includes('diffusion') || cleanQ.includes('active transport')) {
+    const diffTopic = TOPICS.find((t) => t.id === '3-movement-in-out-cells');
+    if (diffTopic) return diffTopic;
+  }
+
+  // Genetics / Inheritance
+  if (cleanQ.includes('genetic') || cleanQ.includes('dna') || cleanQ.includes('inheritance') || cleanQ.includes('allele')) {
+    const genTopic = TOPICS.find((t) => t.id === '17-genetics-inheritance');
+    if (genTopic) return genTopic;
+  }
+
+  // 4. Check if title contains query or query contains title
+  const containsMatch = TOPICS.find((t) => {
+    const tClean = t.title.toLowerCase().replace(/^\d+\.\s*/, '').replace(/[:\-_,]/g, ' ').replace(/\s+/g, ' ').trim();
+    return tClean.includes(cleanQ) || cleanQ.includes(tClean);
+  });
+  if (containsMatch) return containsMatch;
+
+  // 5. Check description
+  const descMatch = TOPICS.find((t) => t.description.toLowerCase().includes(cleanQ));
+  if (descMatch) return descMatch;
+
+  return undefined;
+}
